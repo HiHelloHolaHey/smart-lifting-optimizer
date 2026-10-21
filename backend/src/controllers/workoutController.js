@@ -126,6 +126,27 @@ const saveNotes = async (req, res, next) => {
   }
 };
 
+/** Replaces an exercise in a workout (only for sets not yet completed). */
+const swapExercise = async (req, res, next) => {
+  try {
+    const workout = await loadOwned(req, res);
+    if (!workout) return;
+    const oldId = parseInt(req.params.exerciseId, 10);
+    const newId = parseInt(req.body.new_exercise_id, 10);
+    if (!oldId || !newId) return res.status(400).json({ error: 'new_exercise_id is required' });
+    const exists = await db.oneOrNone('SELECT id FROM exercises WHERE id = $1', [newId]);
+    if (!exists) return res.status(404).json({ error: 'Exercise not found' });
+
+    const result = await db.result(
+      'UPDATE workout_sets SET exercise_id = $3 WHERE workout_id = $1 AND exercise_id = $2 AND completed = false',
+      [workout.id, oldId, newId]
+    );
+    res.status(200).json({ updated_sets: result.rowCount });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getNextForExercise = async (req, res, next) => {
   try {
     const exerciseId = parseInt(req.params.exerciseId, 10);
@@ -136,4 +157,4 @@ const getNextForExercise = async (req, res, next) => {
   }
 };
 
-module.exports = { getWorkouts, getWorkout, updateSet, addSet, updateStatus, saveNotes, getNextForExercise };
+module.exports = { getWorkouts, getWorkout, updateSet, addSet, updateStatus, saveNotes, swapExercise, getNextForExercise };

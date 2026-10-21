@@ -97,3 +97,14 @@ NODE_ENV=development
 ## License
 
 MIT
+
+## Phase 2 features
+
+- **In-workout logger**: warm-up/working sets, previous-performance ghost text, one-tap completion, auto rest timer, per-exercise notes. In-progress input is persisted to localStorage and survives refreshes.
+- **Template builder** (/templates): drag-and-drop custom splits with rep ranges; generate one from natural language with AI.
+- **Dashboard**: monthly volume chart and an SVG muscle-recovery body map (rolling 7 days).
+- **AI endpoints** (Gemini): POST /api/ai/pre-workout-brief, /api/ai/smart-swap, /api/ai/generate-routine. Set LLM_API_KEY in backend/.env. Without a key, or on timeout/error, every endpoint falls back to deterministic logic.
+- **Calendar export**: GET /api/schedule/export returns an .ics file.
+- **Migration**: `node backend/run-migration.js backend/migrations/002_phase2.sql` (idempotent).
+- **Tests**: with the backend running, `node backend/phase2test.js`.
+

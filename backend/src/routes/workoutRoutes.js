@@ -12,5 +12,6 @@ router.put('/:id/status', verifyToken, workoutController.updateStatus);
 router.post('/:id/sets', verifyToken, workoutController.addSet);
 router.put('/:id/sets/:setId', verifyToken, workoutController.updateSet);
 router.put('/:id/exercises/:exerciseId/notes', verifyToken, workoutController.saveNotes);
+router.put('/:id/exercises/:exerciseId/swap', verifyToken, workoutController.swapExercise);
 
 module.exports = router;

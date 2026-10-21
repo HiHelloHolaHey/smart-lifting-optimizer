@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Home, Dumbbell, User, LogOut, Activity, BarChart3, Clock, ChevronRight } from 'lucide-react';
+import { Home, Dumbbell, User, LogOut, Activity, BarChart3, Clock, ChevronRight, LayoutTemplate, CalendarPlus } from 'lucide-react';
+import { analytics } from '../api/endpoints';
+import MuscleBodyMap from '../components/dashboard/MuscleBodyMap';
+import MonthlyVolumeChart from '../components/dashboard/MonthlyVolumeChart';
 import { useAuth } from '../context/AuthContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { useCountdown } from '../hooks/useCountdown';
@@ -66,6 +69,13 @@ const DashboardPage = () => {
   const { workouts, fetchWorkouts } = useWorkout();
   const navigate = useNavigate();
   const [nextWorkout, setNextWorkout] = useState(null);
+  const [recovery, setRecovery] = useState([]);
+  const [monthly, setMonthly] = useState([]);
+
+  useEffect(() => {
+    analytics.recovery().then(({ data }) => setRecovery(data)).catch(() => {});
+    analytics.volume().then(({ data }) => setMonthly(data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetchWorkouts();
@@ -118,6 +128,10 @@ const DashboardPage = () => {
               <Dumbbell className="w-5 h-5" />
               Workouts
             </Link>
+            <Link to="/templates" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 rounded-xl font-medium transition-colors">
+              <LayoutTemplate className="w-5 h-5" />
+              Templates
+            </Link>
             <Link to="/profile" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 rounded-xl font-medium transition-colors">
               <User className="w-5 h-5" />
               Profile
@@ -149,6 +163,9 @@ const DashboardPage = () => {
             <h1 className="text-3xl font-bold text-slate-100 mb-1">Command Center</h1>
             <p className="text-slate-400">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
           </div>
+          <a href="/api/schedule/export" download className="btn-ghost flex items-center gap-2 text-sm">
+            <CalendarPlus className="w-4 h-4" /> Sync to Calendar
+          </a>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -254,6 +271,17 @@ const DashboardPage = () => {
               </div>
               <span>More</span>
             </div>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+          <Card className="lg:col-span-2">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">Monthly Volume</h3>
+            <MonthlyVolumeChart data={monthly} />
+          </Card>
+          <Card>
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">Muscle Recovery</h3>
+            <MuscleBodyMap recovery={recovery} />
           </Card>
         </div>
       </main>

@@ -1,298 +1,287 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, ArrowLeftRight, TrendingUp } from 'lucide-react';
-import { useWorkout } from '../context/WorkoutContext';
+import { ArrowLeft, ArrowLeftRight, TrendingUp, Sparkles, Plus, Flame } from 'lucide-react';
+import { workouts as workoutsApi, ai } from '../api/endpoints';
 import { useProgressOverload } from '../hooks/useProgressOverload';
-import { workouts, exercises as exercisesApi } from '../api/endpoints';
+import { usePersistentState } from '../hooks/usePersistentState';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { Modal } from '../components/ui/Modal';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import SetRow from '../components/workout/SetRow';
+import RestTimer from '../components/workout/RestTimer';
+import ExerciseNotes from '../components/workout/ExerciseNotes';
+import SmartSwapModal from '../components/workout/SmartSwapModal';
+
+const REST_SECONDS = { working: 120, warmup: 60 };
 
 const OverloadChip = ({ exerciseId }) => {
   const { suggestion, loading } = useProgressOverload(exerciseId);
-  
-  if (loading || !suggestion) return null;
-  
+  if (loading || !suggestion || suggestion.suggested_weight_kg === undefined) return null;
   return (
-    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-400">
-      <TrendingUp className="w-3.5 h-3.5" />
-      Suggested: {suggestion.target_weight}kg × {suggestion.target_reps} reps ↑2.5%
+    <div
+      className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-300"
+      title={suggestion.increment_reason}
+    >
+      <TrendingUp className="h-3.5 w-3.5" />
+      Suggested: {suggestion.suggested_weight_kg}kg × {suggestion.suggested_reps}
+      {suggestion.source === 'ai' && <Sparkles className="h-3 w-3 text-cyan-300" aria-label="AI-adjusted" />}
     </div>
   );
 };
 
-const SwapModal = ({ isOpen, onClose, exerciseId, onSwap }) => {
-  const [alternatives, setAlternatives] = useState([]);
-  const [loading, setLoading] = useState(false);
+/** 2-sentence AI coaching brief; cached per workout so refreshes don't re-bill the LLM. */
+const CoachBrief = ({ workoutId }) => {
+  const [brief, setBrief] = usePersistentState(`brief-${workoutId}`, null);
+  const [loading, setLoading] = useState(!brief);
 
   useEffect(() => {
-    if (isOpen && exerciseId) {
-      setLoading(true);
-      exercisesApi.swap(exerciseId)
-        .then(res => setAlternatives(res.data.alternatives || res.data))
-        .catch(err => console.error(err))
-        .finally(() => setLoading(false));
-    }
-  }, [isOpen, exerciseId]);
+    if (brief) return;
+    let alive = true;
+    ai.preWorkoutBrief(workoutId)
+      .then(({ data }) => alive && setBrief({ text: data.brief, source: data.source }))
+      .catch(() => alive && setBrief(null))
+      .finally(() => alive && setLoading(false));
+    return () => { alive = false; };
+  }, [workoutId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  if (!loading && !brief) return null;
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Swap Exercise">
+    <div className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-400/10 to-indigo-500/10 p-4">
+      <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-cyan-300">
+        <Sparkles className="h-4 w-4" />
+        {brief?.source === 'ai' ? 'AI Coach' : 'Coach'}
+      </div>
       {loading ? (
-        <div className="flex justify-center py-8">
-          <LoadingSpinner />
-        </div>
+        <div className="space-y-2" aria-busy="true"><div className="h-3 w-full animate-pulse rounded bg-slate-700/60" /><div className="h-3 w-2/3 animate-pulse rounded bg-slate-700/60" /></div>
       ) : (
-        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
-          {alternatives.length > 0 ? alternatives.map(alt => (
-            <button
-              key={alt.id || alt._id}
-              onClick={() => onSwap(alt)}
-              className="w-full p-4 rounded-xl border border-slate-700 bg-slate-800/40 hover:bg-slate-700/60 transition-colors text-left flex flex-col gap-2"
-            >
-              <div className="font-medium text-slate-200">{alt.name}</div>
-              <div className="flex gap-2">
-                <Badge variant="info">{alt.muscle_group}</Badge>
-                {alt.equipment && <Badge variant="default">{alt.equipment}</Badge>}
-              </div>
-            </button>
-          )) : (
-            <div className="text-center py-8 text-slate-400">No alternatives found.</div>
-          )}
-        </div>
+        <p className="text-sm leading-relaxed text-slate-200">{brief.text}</p>
       )}
-    </Modal>
+    </div>
   );
 };
 
 const WorkoutPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { fetchWorkout, currentWorkout, logSet, loading } = useWorkout();
-  
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [swapModalOpen, setSwapModalOpen] = useState(false);
-  const [currentSwapExerciseId, setCurrentSwapExerciseId] = useState(null);
-  
-  // Local state for editing sets
-  const [localSets, setLocalSets] = useState({});
 
-  useEffect(() => {
-    fetchWorkout(id);
-  }, [id, fetchWorkout]);
+  const [workout, setWorkout] = useState(null);
+  const [loadError, setLoadError] = useState('');
+  const [error, setError] = useState('');
+  const [finished, setFinished] = useState(false);
+  const [swapTarget, setSwapTarget] = useState(null);
 
-  useEffect(() => {
-    if (currentWorkout) {
-      const initialSets = {};
-      currentWorkout.exercises?.forEach(ex => {
-        ex.sets?.forEach(set => {
-          initialSets[`${ex._id || ex.id}-${set._id || set.id}`] = {
-            weight: set.actual_weight || set.target_weight || '',
-            reps: set.actual_reps || set.target_reps || '',
-            completed: set.completed || false
-          };
-        });
-      });
-      setLocalSets(initialSets);
-    }
-  }, [currentWorkout]);
+  // Everything the user types lives in a localStorage-backed draft, so an accidental refresh loses nothing.
+  const [draft, setDraft, clearDraft] = usePersistentState(`workout-draft-${id}`, { inputs: {}, notes: {}, rest: null });
 
-  const handleSetChange = (exId, setId, field, value) => {
-    setLocalSets(prev => ({
-      ...prev,
-      [`${exId}-${setId}`]: {
-        ...prev[`${exId}-${setId}`],
-        [field]: value
-      }
-    }));
-  };
-
-  const handleCompleteSet = async (exId, setId) => {
-    const key = `${exId}-${setId}`;
-    const data = localSets[key];
-    const newCompleted = !data.completed;
-    
-    // Optimistic update
-    handleSetChange(exId, setId, 'completed', newCompleted);
-    
+  const load = useCallback(async () => {
     try {
-      await logSet(id, setId, {
-        actual_weight: Number(data.weight),
-        actual_reps: Number(data.reps),
-        completed: newCompleted
-      });
+      const { data } = await workoutsApi.getById(id);
+      setWorkout(data);
     } catch (err) {
-      // Revert on error
-      handleSetChange(exId, setId, 'completed', !newCompleted);
+      setLoadError(err.response?.data?.error || 'Failed to load workout.');
+    }
+  }, [id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const previousMap = useMemo(() => {
+    const m = {};
+    (workout?.previous || []).forEach((p) => { m[`${p.exercise_id}-${p.set_type}-${p.set_number}`] = p; });
+    return m;
+  }, [workout?.previous]);
+
+  const exercises = useMemo(() => {
+    if (!workout) return [];
+    const map = new Map();
+    workout.sets.forEach((s) => {
+      if (!map.has(s.exercise_id)) map.set(s.exercise_id, { exercise_id: s.exercise_id, exercise_name: s.exercise_name, muscle_group: s.muscle_group, sets: [] });
+      map.get(s.exercise_id).sets.push(s);
+    });
+    map.forEach((ex) => ex.sets.sort((a, b) => (a.set_type === b.set_type ? a.set_number - b.set_number : a.set_type === 'warmup' ? -1 : 1)));
+    return [...map.values()];
+  }, [workout]);
+
+  const valuesFor = (set) => draft.inputs[set.id] ?? { weight: set.weight_kg ?? '', reps: set.reps ?? '' };
+  const notesFor = (ex) => draft.notes[ex.exercise_id] ?? workout.notes_by_exercise?.[ex.exercise_id] ?? '';
+
+  const patchSet = (setId, patch) =>
+    setWorkout((w) => ({ ...w, sets: w.sets.map((s) => (s.id === setId ? { ...s, ...patch } : s)) }));
+
+  const handleInput = (set, field, value) =>
+    setDraft((d) => ({ ...d, inputs: { ...d.inputs, [set.id]: { ...valuesFor(set), [field]: value } } }));
+
+  const handleToggle = async (set) => {
+    const nowDone = !set.completed;
+    const prev = previousMap[`${set.exercise_id}-${set.set_type}-${set.set_number}`];
+    const v = valuesFor(set);
+    // Empty inputs fall back to the ghost/previous values so one tap logs "same as last time"
+    const weight = v.weight !== '' ? Number(v.weight) : prev ? Number(prev.weight_kg) : Number(set.weight_kg ?? 0);
+    const reps = v.reps !== '' ? parseInt(v.reps, 10) : prev ? prev.reps : Number(set.reps ?? 0);
+
+    setError('');
+    patchSet(set.id, { completed: nowDone, weight_kg: weight, reps });
+    setDraft((d) => ({
+      ...d,
+      inputs: { ...d.inputs, [set.id]: { weight, reps } },
+      rest: nowDone ? { setId: set.id, endsAt: Date.now() + REST_SECONDS[set.set_type] * 1000, total: REST_SECONDS[set.set_type] } : d.rest?.setId === set.id ? null : d.rest,
+    }));
+
+    try {
+      await workoutsApi.updateSet(id, set.id, { weight_kg: weight, reps, completed: nowDone });
+      if (nowDone && workout.status === 'scheduled') {
+        setWorkout((w) => ({ ...w, status: 'active' }));
+        workoutsApi.updateStatus(id, 'active').catch(() => {});
+      }
+    } catch {
+      patchSet(set.id, { completed: set.completed });
+      setDraft((d) => ({ ...d, rest: null }));
+      setError('Could not save that set. Your numbers are kept — try again.');
     }
   };
 
-  const handleFinishWorkout = () => {
-    setIsCompleted(true);
-    // Ideally update workout status on backend
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 2500);
+  const saveNotes = async (ex) => {
+    try { await workoutsApi.saveNotes(id, ex.exercise_id, notesFor(ex)); }
+    catch { setError('Could not save notes. They are kept locally.'); }
   };
 
-  const openSwap = (exercise) => {
-    setCurrentSwapExerciseId(exercise.exercise_id || exercise._id);
-    setSwapModalOpen(true);
+  const addSet = async (ex, setType) => {
+    try {
+      const last = [...ex.sets].reverse().find((s) => s.set_type === setType) || ex.sets[ex.sets.length - 1];
+      const { data } = await workoutsApi.addSet(id, {
+        exercise_id: ex.exercise_id, set_type: setType,
+        weight_kg: setType === 'warmup' ? null : last?.weight_kg ?? null, reps: last?.reps ?? null,
+      });
+      setWorkout((w) => ({ ...w, sets: [...w.sets, { ...data, exercise_name: ex.exercise_name, muscle_group: ex.muscle_group }] }));
+    } catch {
+      setError('Could not add set.');
+    }
   };
 
-  const handleSwap = async (newExercise) => {
-    // In a real app, call API to swap in workout then refetch.
-    setSwapModalOpen(false);
-    await fetchWorkout(id); // Reload to get new exercise
+  const handleSwap = async (alt) => {
+    try {
+      await workoutsApi.swapExercise(id, swapTarget.exercise_id, alt.id);
+      setSwapTarget(null);
+      await load();
+    } catch {
+      setError('Swap failed. Please try again.');
+    }
   };
 
-  if (loading && !currentWorkout) return <LoadingSpinner />;
-  if (!currentWorkout) return <div className="p-8 text-center text-slate-400">Workout not found.</div>;
+  const finish = async () => {
+    try {
+      await workoutsApi.updateStatus(id, 'completed');
+      clearDraft();
+      localStorage.removeItem(`brief-${id}`);
+      setFinished(true);
+      setTimeout(() => navigate('/dashboard'), 2200);
+    } catch {
+      setError('Could not complete workout. Please retry.');
+    }
+  };
+
+  const stats = useMemo(() => {
+    const done = (workout?.sets || []).filter((s) => s.completed && s.set_type === 'working');
+    return { sets: done.length, volume: Math.round(done.reduce((a, s) => a + Number(s.weight_kg || 0) * (s.reps || 0), 0)) };
+  }, [workout]);
+
+  if (loadError) return <div className="p-10 text-center text-slate-400">{loadError}</div>;
+  if (!workout) return <LoadingSpinner />;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 relative">
-      {isCompleted && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-sm animate-in fade-in duration-500">
-          <div className="text-center space-y-4 transform scale-150">
-            <div className="text-6xl animate-bounce">🎉</div>
-            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-electric-indigo">
-              Workout Complete!
-            </h2>
-            <p className="text-slate-400">Great job. Returning to dashboard...</p>
+    <div className="relative min-h-screen bg-slate-950 pb-24 text-slate-100">
+      {finished && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-sm">
+          <div className="space-y-3 text-center">
+            <div className="animate-bounce text-6xl">🎉</div>
+            <h2 className="bg-gradient-to-r from-cyan-300 to-indigo-400 bg-clip-text text-3xl font-bold text-transparent">Workout Complete!</h2>
+            <p className="text-slate-400">{stats.sets} sets · {stats.volume.toLocaleString()} kg volume</p>
           </div>
         </div>
       )}
 
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 p-4 lg:px-8">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => navigate('/dashboard')}
-              className="p-2 -ml-2 text-slate-400 hover:text-slate-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-6 h-6" />
+      <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/85 p-4 backdrop-blur-md lg:px-8">
+        <div className="mx-auto flex max-w-3xl items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button type="button" aria-label="Back" onClick={() => navigate('/dashboard')} className="-ml-2 rounded-lg p-2 text-slate-400 hover:text-slate-100">
+              <ArrowLeft className="h-6 w-6" />
             </button>
             <div>
-              <h1 className="text-xl font-bold text-slate-100">{currentWorkout.split_type} Day</h1>
-              <p className="text-sm text-slate-400">{new Date(currentWorkout.scheduled_date).toLocaleDateString()}</p>
+              <h1 className="text-lg font-bold">{workout.split_type.replace('_', ' ')}</h1>
+              <p className="text-xs text-slate-400">{new Date(workout.scheduled_date).toLocaleDateString()} · {stats.sets} sets · {stats.volume.toLocaleString()} kg</p>
             </div>
           </div>
-          <Badge variant={currentWorkout.status === 'completed' ? 'success' : 'info'}>
-            {currentWorkout.status === 'completed' ? 'Completed' : 'In Progress'}
-          </Badge>
+          <Badge variant={workout.status === 'completed' ? 'success' : workout.status === 'active' ? 'warning' : 'info'}>{workout.status}</Badge>
         </div>
       </header>
 
-      {/* Exercises */}
-      <main className="max-w-4xl mx-auto p-4 lg:p-8 space-y-6">
-        {currentWorkout.exercises?.map((ex, index) => {
-          const exId = ex._id || ex.id || index;
-          return (
-            <Card key={exId} className="overflow-hidden p-0 border-slate-800">
-              <div className="p-5 border-b border-slate-800 bg-slate-900/30 flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-lg font-bold">{ex.name || 'Exercise'}</h3>
-                    <Badge variant="default">{ex.muscle_group || 'Target'}</Badge>
-                  </div>
-                  <OverloadChip exerciseId={ex.exercise_id || ex._id} />
+      <main className="mx-auto max-w-3xl space-y-5 p-4 lg:p-8">
+        {workout.status !== 'completed' && <CoachBrief workoutId={id} />}
+        {error && <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</div>}
+
+        {exercises.map((ex) => (
+          <Card key={ex.exercise_id} className="overflow-hidden !p-0 border-slate-800">
+            <div className="flex items-start justify-between border-b border-slate-800 bg-slate-900/40 p-5">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-lg font-bold">{ex.exercise_name}</h3>
+                  <Badge variant="default">{ex.muscle_group}</Badge>
                 </div>
-                <button 
-                  onClick={() => openSwap(ex)}
-                  className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-all"
-                  title="Swap Exercise"
-                >
-                  <ArrowLeftRight className="w-5 h-5" />
-                </button>
+                <OverloadChip exerciseId={ex.exercise_id} />
               </div>
-              
-              <div className="p-2 md:p-5 overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[500px]">
-                  <thead>
-                    <tr className="text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
-                      <th className="pb-3 pl-2 w-12">Set</th>
-                      <th className="pb-3 px-2">Target</th>
-                      <th className="pb-3 px-2">Weight (kg)</th>
-                      <th className="pb-3 px-2">Reps</th>
-                      <th className="pb-3 pr-2 w-16 text-center">Done</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/50">
-                    {ex.sets?.map((set, sIdx) => {
-                      const setId = set._id || set.id || sIdx;
-                      const key = `${exId}-${setId}`;
-                      const setData = localSets[key] || {};
-                      const isCompleted = setData.completed;
+              <button type="button" onClick={() => setSwapTarget(ex)} aria-label={`Swap ${ex.exercise_name}`} title="Swap exercise"
+                className="rounded-lg p-2 text-slate-400 transition-all hover:bg-indigo-500/10 hover:text-indigo-300">
+                <ArrowLeftRight className="h-5 w-5" />
+              </button>
+            </div>
 
-                      return (
-                        <tr key={setId} className={`transition-colors ${isCompleted ? 'bg-green-500/5' : ''}`}>
-                          <td className="py-3 pl-2 text-slate-400 font-medium">{sIdx + 1}</td>
-                          <td className="py-3 px-2 text-sm text-slate-500">
-                            {set.target_weight}kg × {set.target_reps}
-                          </td>
-                          <td className="py-3 px-2">
-                            <input
-                              type="number"
-                              className={`w-20 bg-slate-900 border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 transition-colors ${
-                                isCompleted ? 'border-green-500/30 text-green-100' : 'border-slate-700 text-slate-100'
-                              }`}
-                              value={setData.weight || ''}
-                              onChange={(e) => handleSetChange(exId, setId, 'weight', e.target.value)}
-                              disabled={isCompleted}
-                            />
-                          </td>
-                          <td className="py-3 px-2">
-                            <input
-                              type="number"
-                              className={`w-20 bg-slate-900 border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500 transition-colors ${
-                                isCompleted ? 'border-green-500/30 text-green-100' : 'border-slate-700 text-slate-100'
-                              }`}
-                              value={setData.reps || ''}
-                              onChange={(e) => handleSetChange(exId, setId, 'reps', e.target.value)}
-                              disabled={isCompleted}
-                            />
-                          </td>
-                          <td className="py-3 pr-2 text-center">
-                            <button
-                              onClick={() => handleCompleteSet(exId, setId)}
-                              className={`p-1.5 rounded-lg transition-all ${
-                                isCompleted 
-                                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30' 
-                                  : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-slate-300'
-                              }`}
-                            >
-                              <CheckCircle2 className="w-6 h-6" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+            <ExerciseNotes
+              value={notesFor(ex)}
+              onChange={(text) => setDraft((d) => ({ ...d, notes: { ...d.notes, [ex.exercise_id]: text } }))}
+              onSave={() => saveNotes(ex)}
+            />
+
+            <div className="p-3">
+              <div className="grid grid-cols-[2rem_1fr_4.5rem_4.5rem_2.75rem] gap-2 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                <span className="text-center">Set</span><span>Previous</span><span className="text-center">kg</span><span className="text-center">Reps</span><span />
               </div>
-            </Card>
-          );
-        })}
+              {ex.sets.map((set) => (
+                <React.Fragment key={set.id}>
+                  <SetRow
+                    set={set}
+                    label={set.set_type === 'warmup' ? 'W' : set.set_number}
+                    previous={previousMap[`${set.exercise_id}-${set.set_type}-${set.set_number}`]}
+                    values={valuesFor(set)}
+                    onChange={(field, value) => handleInput(set, field, value)}
+                    onToggle={() => handleToggle(set)}
+                  />
+                  {draft.rest?.setId === set.id && set.completed && (
+                    <RestTimer
+                      key={draft.rest.endsAt}
+                      endsAt={draft.rest.endsAt}
+                      total={draft.rest.total}
+                      onAdjust={(delta) => setDraft((d) => ({ ...d, rest: { ...d.rest, endsAt: d.rest.endsAt + delta * 1000, total: Math.max(d.rest.total, Math.ceil((d.rest.endsAt + delta * 1000 - Date.now()) / 1000)) } }))}
+                      onDone={() => setDraft((d) => ({ ...d, rest: null }))}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+              <div className="mt-2 flex gap-2 px-2">
+                <button type="button" onClick={() => addSet(ex, 'working')} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-100"><Plus className="h-3.5 w-3.5" />Set</button>
+                <button type="button" onClick={() => addSet(ex, 'warmup')} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-amber-400/80 hover:bg-amber-500/10"><Flame className="h-3.5 w-3.5" />Warm-up</button>
+              </div>
+            </div>
+          </Card>
+        ))}
 
-        <div className="pt-6 pb-12 flex justify-center">
-          <Button 
-            size="lg" 
-            onClick={handleFinishWorkout}
-            className="w-full md:w-auto shadow-[0_0_20px_rgba(99,102,241,0.2)]"
-          >
-            Complete Workout
-          </Button>
-        </div>
+        {workout.status !== 'completed' && (
+          <div className="flex justify-center pt-4">
+            <Button size="lg" onClick={finish} className="w-full md:w-auto shadow-[0_0_20px_rgba(99,102,241,0.25)]">Complete Workout</Button>
+          </div>
+        )}
       </main>
 
-      <SwapModal
-        isOpen={swapModalOpen}
-        onClose={() => setSwapModalOpen(false)}
-        exerciseId={currentSwapExerciseId}
-        onSwap={handleSwap}
-      />
+      <SmartSwapModal isOpen={Boolean(swapTarget)} onClose={() => setSwapTarget(null)} exercise={swapTarget} onSelect={handleSwap} />
     </div>
   );
 };

@@ -11,6 +11,7 @@ import DashboardPage from './pages/DashboardPage';
 import WorkoutsPage from './pages/WorkoutsPage';
 import WorkoutPage from './pages/WorkoutPage';
 import ProfilePage from './pages/ProfilePage';
+import TemplatesPage from './pages/TemplatesPage';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -39,6 +40,9 @@ const AppRoutes = () => {
       } />
       <Route path="/workout/:id" element={
         <ProtectedRoute><WorkoutPage /></ProtectedRoute>
+      } />
+      <Route path="/templates" element={
+        <ProtectedRoute><TemplatesPage /></ProtectedRoute>
       } />
       <Route path="/profile" element={
         <ProtectedRoute><ProfilePage /></ProtectedRoute>
