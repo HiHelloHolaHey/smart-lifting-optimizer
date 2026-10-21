@@ -83,7 +83,7 @@ const DashboardPage = () => {
 
   useEffect(() => {
     if (workouts && workouts.length > 0) {
-      const pending = workouts.filter(w => w.status === 'scheduled' || w.status === 'in_progress');
+      const pending = workouts.filter(w => w.status === 'scheduled' || w.status === 'active');
       if (pending.length > 0) {
         pending.sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date));
         setNextWorkout(pending[0]);
