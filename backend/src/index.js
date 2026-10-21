@@ -10,6 +10,9 @@ const onboardingRoutes = require('./routes/onboardingRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
 const exerciseRoutes = require('./routes/exerciseRoutes');
+const aiRoutes = require('./routes/aiRoutes');
+const templateRoutes = require('./routes/templateRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 const app = express();
 
@@ -26,6 +29,9 @@ app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/workouts', workoutRoutes);
 app.use('/api/exercises', exerciseRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });

@@ -8,6 +8,9 @@ const verifyToken = require('../middleware/verifyToken');
 router.get('/next/:exerciseId', verifyToken, workoutController.getNextForExercise);
 router.get('/', verifyToken, workoutController.getWorkouts);
 router.get('/:id', verifyToken, workoutController.getWorkout);
+router.put('/:id/status', verifyToken, workoutController.updateStatus);
+router.post('/:id/sets', verifyToken, workoutController.addSet);
 router.put('/:id/sets/:setId', verifyToken, workoutController.updateSet);
+router.put('/:id/exercises/:exerciseId/notes', verifyToken, workoutController.saveNotes);
 
 module.exports = router;

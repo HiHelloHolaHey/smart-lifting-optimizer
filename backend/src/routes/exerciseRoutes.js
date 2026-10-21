@@ -9,4 +9,6 @@ router.post('/swap', verifyToken, exerciseController.swapExercise);
 // GET /api/exercises/:id/alternatives  (frontend-friendly REST style)
 router.get('/:id/alternatives', verifyToken, exerciseController.swapExerciseById);
 
+router.get('/', verifyToken, require('../controllers/aiController').listExercises);
+
 module.exports = router;

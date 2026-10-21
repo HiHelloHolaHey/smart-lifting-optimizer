@@ -1,5 +1,6 @@
 const workoutSetModel = require('../models/workoutSetModel');
 const onermModel = require('../models/onermModel');
+const llm = require('./llmService');
 
 /**
  * @typedef {Object} OverloadSuggestion
@@ -15,7 +16,7 @@ const onermModel = require('../models/onermModel');
  * @param {number} exerciseId 
  * @returns {Promise<OverloadSuggestion>}
  */
-const calculateNextSession = async (userId, exerciseId) => {
+const calculateDeterministic = async (userId, exerciseId) => {
   // Fetch last ~3 sessions worth of sets. Assuming max 5 sets per session, fetch 15.
   const history = await workoutSetModel.getLastNSessionsForExercise(userId, exerciseId, 3);
   
@@ -99,6 +100,53 @@ const calculateNextSession = async (userId, exerciseId) => {
   };
 };
 
+/**
+ * AI-refined progression. Starts from the rule-based suggestion and lets the LLM adjust it
+ * using the recent history; falls back to the rule-based result on any failure/timeout.
+ * @param {string} userId
+ * @param {number} exerciseId
+ * @returns {Promise<OverloadSuggestion & {source: 'ai'|'rules'}>}
+ */
+const calculateNextSession = async (userId, exerciseId) => {
+  const base = await calculateDeterministic(userId, exerciseId);
+  if (!llm.isConfigured()) return { ...base, source: 'rules' };
+
+  try {
+    const history = await workoutSetModel.getLastNSessionsForExercise(userId, exerciseId, 3);
+    if (!history.length) return { ...base, source: 'rules' };
+
+    const compact = history.map((s) => ({
+      date: new Date(s.scheduled_date).toISOString().slice(0, 10),
+      kg: parseFloat(s.weight_kg),
+      reps: s.reps,
+      type: s.set_type,
+    }));
+    const ai = await llm.generateJson(
+      `You are a strength coach applying progressive overload. Recent completed sets: ${JSON.stringify(compact)}.\n` +
+        `Rule-based suggestion: ${base.suggested_weight_kg}kg x ${base.suggested_reps} (${base.increment_reason}).\n` +
+        `Return JSON {"suggested_weight_kg":number,"suggested_reps":number,"increment_reason":"one short sentence"}. ` +
+        `Stay within +/-5% of the rule-based weight and +/-2 reps, in 0.5kg steps.`
+    );
+
+    const w = Number(ai.suggested_weight_kg);
+    const r = Math.round(Number(ai.suggested_reps));
+    const within = Math.abs(w - base.suggested_weight_kg) <= Math.max(2.5, base.suggested_weight_kg * 0.05) && Math.abs(r - base.suggested_reps) <= 2;
+    if (!Number.isFinite(w) || !Number.isFinite(r) || r < 1 || !within) throw new Error('AI suggestion out of bounds');
+
+    return {
+      suggested_weight_kg: Math.round(w / 0.5) * 0.5,
+      suggested_reps: r,
+      increment_reason: String(ai.increment_reason || base.increment_reason),
+      ready_for_progression: base.ready_for_progression,
+      source: 'ai',
+    };
+  } catch (err) {
+    console.warn('[ai] overload fallback:', err.message);
+    return { ...base, source: 'rules' };
+  }
+};
+
 module.exports = {
-  calculateNextSession
+  calculateNextSession,
+  calculateDeterministic
 };
