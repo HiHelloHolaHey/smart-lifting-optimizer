@@ -44,7 +44,7 @@ const getMuscleVolume = (userId, sinceDate) =>
 /** Weekly volume totals for the last N days (monthly summary). */
 const getVolumeByWeek = (userId, days) =>
   db.any(
-    `SELECT date_trunc('week', COALESCE(ws.completed_at, w.scheduled_date))::date AS week,
+    `SELECT to_char(date_trunc('week', COALESCE(ws.completed_at, w.scheduled_date) AT TIME ZONE 'UTC'), 'YYYY-MM-DD') AS week,
             COALESCE(SUM(ws.weight_kg * ws.reps), 0)::float AS volume,
             COUNT(*)::int AS sets
      FROM workout_sets ws

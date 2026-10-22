@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "test:api": "node apitest.js"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",

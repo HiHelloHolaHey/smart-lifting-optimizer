@@ -20,7 +20,10 @@
  * @returns {Promise<string[]>}
  */
 const findAvailableSlots = async (scheduleInput) => {
-  const { busyTimes, gymOpenTime, gymCloseTime, preferredFrequency, goalPriority } = scheduleInput;
+  const { busyTimes = [], preferredFrequency = 4, goalPriority = 'morning' } = scheduleInput;
+  // Gym hours are optional (user may train at several gyms): assume a wide window when omitted
+  const gymOpenTime = scheduleInput.gymOpenTime || '05:00';
+  const gymCloseTime = scheduleInput.gymCloseTime || '23:00';
   const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   
   const slots = [];

@@ -85,7 +85,7 @@ const generateWeeklyTemplate = async (userId, splitType, startDate) => {
         userId,
         scheduledDate: date.toISOString(),
         splitType: split,
-        notes: `Week \${week + 1} \${split} Workout`
+        notes: `Week ${week + 1} ${split} Workout`
       });
       workoutIds.push(workout.id);
 
@@ -97,7 +97,7 @@ const generateWeeklyTemplate = async (userId, splitType, startDate) => {
             setsToInsert.push({
               workout_id: workout.id,
               exercise_id: exId,
-              weight_kg: 0, // Will be updated by progressive overload logic when starting
+              weight_kg: null, // Filled in from the user's logged history / suggestions
               reps: 8,
               set_number: set
             });
@@ -129,9 +129,9 @@ const initializeOnboarding = async (userId, { experienceLevel, goal, splitType, 
 
   if (schedule) {
     await scheduleModel.upsertSchedule(userId, {
-      gymOpenTime: schedule.gymOpenTime,
-      gymCloseTime: schedule.gymCloseTime,
-      busyTimesJson: schedule.busyTimes,
+      gymOpenTime: schedule.gymOpenTime || '05:00',
+      gymCloseTime: schedule.gymCloseTime || '23:00',
+      busyTimesJson: schedule.busyTimes || [],
       preferredFrequency: schedule.preferredFrequency,
       goalPriority: schedule.goalPriority
     });

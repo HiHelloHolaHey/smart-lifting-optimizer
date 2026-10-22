@@ -52,6 +52,8 @@ const sanitizeExercises = async (list) => {
         sets: Math.max(1, Math.min(10, parseInt(e.sets, 10) || 3)),
         rep_min: repMin,
         rep_max: Math.max(repMin, Math.min(50, parseInt(e.rep_max, 10) || 12)),
+        // Optional default working weight (kg)
+        weight_kg: Number(e.weight_kg) > 0 ? Math.min(1000, Math.round(Number(e.weight_kg) * 2) / 2) : null,
       };
     });
 };
@@ -118,9 +120,9 @@ const startTemplate = async (req, res, next) => {
 
     const workoutId = await db.tx(async (t) => {
       const w = await t.one(
-        `INSERT INTO workouts (user_id, scheduled_date, split_type, status, notes)
-         VALUES ($1, NOW(), 'FULL_BODY', 'scheduled', $2) RETURNING id`,
-        [req.user.id, `Template: ${tpl.name}`]
+        `INSERT INTO workouts (user_id, scheduled_date, split_type, status, notes, name)
+         VALUES ($1, NOW(), 'FULL_BODY', 'scheduled', $2, $3) RETURNING id`,
+        [req.user.id, `Template: ${tpl.name}`, tpl.name]
       );
       for (const ex of tpl.exercise_order_json) {
         const last = await t.oneOrNone(
@@ -133,7 +135,7 @@ const startTemplate = async (req, res, next) => {
           await t.none(
             `INSERT INTO workout_sets (workout_id, exercise_id, weight_kg, reps, set_number, set_type)
              VALUES ($1, $2, $3, $4, $5, 'working')`,
-            [w.id, ex.exercise_id, last?.weight_kg ?? null, ex.rep_max, i]
+            [w.id, ex.exercise_id, ex.weight_kg ?? last?.weight_kg ?? null, ex.rep_max, i]
           );
         }
       }
@@ -190,7 +192,7 @@ const recovery = async (req, res, next) => {
 const volumeSummary = async (req, res, next) => {
   try {
     const rows = await workoutLogModel.getVolumeByWeek(req.user.id, 30);
-    res.json(rows.map((r) => ({ week: new Date(r.week).toISOString().slice(5, 10), volume: Math.round(r.volume), sets: r.sets })));
+    res.json(rows.map((r) => ({ week: r.week.slice(5), volume: Math.round(r.volume), sets: r.sets })));
   } catch (error) {
     next(error);
   }

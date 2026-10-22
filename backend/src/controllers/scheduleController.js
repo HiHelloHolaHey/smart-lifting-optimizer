@@ -9,9 +9,9 @@ const generateSchedule = async (req, res, next) => {
     const slots = await schedulingService.findAvailableSlots(scheduleInput);
     
     await scheduleModel.upsertSchedule(userId, {
-      gymOpenTime: scheduleInput.gymOpenTime,
-      gymCloseTime: scheduleInput.gymCloseTime,
-      busyTimesJson: scheduleInput.busyTimes,
+      gymOpenTime: scheduleInput.gymOpenTime || '05:00',
+      gymCloseTime: scheduleInput.gymCloseTime || '23:00',
+      busyTimesJson: scheduleInput.busyTimes || [],
       preferredFrequency: scheduleInput.preferredFrequency,
       goalPriority: scheduleInput.goalPriority
     });

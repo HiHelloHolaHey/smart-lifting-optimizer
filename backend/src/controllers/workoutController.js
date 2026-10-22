@@ -4,7 +4,8 @@ const workoutLogModel = require('../models/workoutLogModel');
 const progressiveOverloadService = require('../services/progressiveOverloadService');
 const db = require('../config/db');
 
-const VALID_STATUS = ['scheduled', 'active', 'completed', 'skipped'];
+// 'active' and 'completed' go through start/finish so timestamps stay consistent
+const VALID_STATUS = ['scheduled', 'skipped'];
 
 /** Loads a workout and verifies ownership; sends the error response itself and returns null on failure. */
 const loadOwned = async (req, res) => {
@@ -51,11 +52,20 @@ const updateSet = async (req, res, next) => {
   try {
     const { setId, id } = req.params;
     const owned = await db.oneOrNone(
-      `SELECT ws.id FROM workout_sets ws JOIN workouts w ON w.id = ws.workout_id
+      `SELECT ws.id, ws.completed, w.status FROM workout_sets ws JOIN workouts w ON w.id = ws.workout_id
        WHERE ws.id = $1 AND w.id = $2 AND w.user_id = $3`,
       [setId, id, req.user.id]
     );
     if (!owned) return res.status(404).json({ error: 'Set not found' });
+
+    const wantsLog = req.body.completed === true || req.body.completed === 'true';
+    if (wantsLog && owned.status !== 'active') {
+      return res.status(409).json({ error: 'Start the workout before logging sets.', code: 'NOT_STARTED' });
+    }
+    const touchesValues = req.body.weight_kg !== undefined || req.body.reps !== undefined;
+    if (owned.completed && touchesValues && req.body.completed !== false) {
+      return res.status(409).json({ error: 'Un-tick the set before editing it.', code: 'SET_LOCKED' });
+    }
 
     // Whitelist: never interpolate client-provided keys into SQL
     const updates = {};
@@ -108,6 +118,7 @@ const updateStatus = async (req, res, next) => {
     const workout = await loadOwned(req, res);
     if (!workout) return;
     if (!VALID_STATUS.includes(req.body.status)) return res.status(400).json({ error: 'Invalid status' });
+    if (workout.status === 'active' || workout.status === 'completed') return res.status(409).json({ error: 'Use finish or discard for this workout.' });
     res.status(200).json(await workoutModel.updateWorkoutStatus(workout.id, req.body.status));
   } catch (error) {
     next(error);
@@ -121,6 +132,107 @@ const saveNotes = async (req, res, next) => {
     const exerciseId = parseInt(req.params.exerciseId, 10);
     const notes = String(req.body.notes ?? '').slice(0, 2000);
     res.status(200).json(await workoutLogModel.upsertNotes(workout.id, exerciseId, notes));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/** Starts the workout: only one may be in progress at a time. Sets can only be logged after this. */
+const startWorkout = async (req, res, next) => {
+  try {
+    const workout = await loadOwned(req, res);
+    if (!workout) return;
+    if (workout.status === 'completed') return res.status(409).json({ error: 'This workout is already completed.' });
+    if (workout.status === 'active') return res.status(200).json(workout);
+
+    const other = await db.oneOrNone(
+      "SELECT id, name, split_type FROM workouts WHERE user_id = $1 AND status = 'active' AND id <> $2",
+      [req.user.id, workout.id]
+    );
+    if (other) {
+      return res.status(409).json({ error: 'Another workout is already in progress. Finish or discard it first.', code: 'ACTIVE_EXISTS', active_workout_id: other.id });
+    }
+    res.status(200).json(
+      await db.one("UPDATE workouts SET status = 'active', started_at = NOW(), ended_at = NULL WHERE id = $1 RETURNING *", [workout.id])
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+const finishWorkout = async (req, res, next) => {
+  try {
+    const workout = await loadOwned(req, res);
+    if (!workout) return;
+    if (workout.status !== 'active') return res.status(409).json({ error: 'Only a workout in progress can be finished.' });
+    res.status(200).json(
+      await db.one("UPDATE workouts SET status = 'completed', ended_at = NOW() WHERE id = $1 RETURNING *", [workout.id])
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/** Discards progress: logged sets are cleared and the workout goes back to its planned state. */
+const discardWorkout = async (req, res, next) => {
+  try {
+    const workout = await loadOwned(req, res);
+    if (!workout) return;
+    if (workout.status !== 'active') return res.status(409).json({ error: 'Only a workout in progress can be discarded.' });
+    await db.tx(async (t) => {
+      await t.none(
+        'UPDATE workout_sets SET completed = false, completed_at = NULL WHERE workout_id = $1',
+        [workout.id]
+      );
+      await t.none("UPDATE workouts SET status = 'scheduled', started_at = NULL, ended_at = NULL WHERE id = $1", [workout.id]);
+    });
+    res.status(200).json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/** Adds an exercise (with N planned sets) to a workout that isn't completed. */
+const addExercise = async (req, res, next) => {
+  try {
+    const workout = await loadOwned(req, res);
+    if (!workout) return;
+    if (workout.status === 'completed') return res.status(409).json({ error: 'Cannot edit a completed workout.' });
+    const exerciseId = parseInt(req.body.exercise_id, 10);
+    const sets = Math.max(1, Math.min(10, parseInt(req.body.sets, 10) || 3));
+    const reps = Math.max(1, Math.min(50, parseInt(req.body.reps, 10) || 8));
+    const exists = exerciseId && (await db.oneOrNone('SELECT id FROM exercises WHERE id = $1', [exerciseId]));
+    if (!exists) return res.status(404).json({ error: 'Exercise not found' });
+    const dup = await db.oneOrNone('SELECT 1 FROM workout_sets WHERE workout_id = $1 AND exercise_id = $2 LIMIT 1', [workout.id, exerciseId]);
+    if (dup) return res.status(409).json({ error: 'That exercise is already in this workout.' });
+
+    const weight = req.body.weight_kg === undefined || req.body.weight_kg === null ? null : Number(req.body.weight_kg);
+    await db.tx(async (t) => {
+      for (let i = 1; i <= sets; i++) {
+        await t.none(
+          `INSERT INTO workout_sets (workout_id, exercise_id, weight_kg, reps, set_number, set_type)
+           VALUES ($1, $2, $3, $4, $5, 'working')`,
+          [workout.id, exerciseId, weight, reps, i]
+        );
+      }
+    });
+    res.status(201).json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const removeExercise = async (req, res, next) => {
+  try {
+    const workout = await loadOwned(req, res);
+    if (!workout) return;
+    if (workout.status === 'completed') return res.status(409).json({ error: 'Cannot edit a completed workout.' });
+    const exerciseId = parseInt(req.params.exerciseId, 10);
+    await db.tx(async (t) => {
+      await t.none('DELETE FROM workout_sets WHERE workout_id = $1 AND exercise_id = $2', [workout.id, exerciseId]);
+      await t.none('DELETE FROM workout_logs WHERE workout_id = $1 AND exercise_id = $2', [workout.id, exerciseId]);
+    });
+    res.status(200).json({ success: true });
   } catch (error) {
     next(error);
   }
@@ -157,4 +269,4 @@ const getNextForExercise = async (req, res, next) => {
   }
 };
 
-module.exports = { getWorkouts, getWorkout, updateSet, addSet, updateStatus, saveNotes, swapExercise, getNextForExercise };
+module.exports = { getWorkouts, getWorkout, updateSet, addSet, updateStatus, saveNotes, swapExercise, getNextForExercise, startWorkout, finishWorkout, discardWorkout, addExercise, removeExercise };

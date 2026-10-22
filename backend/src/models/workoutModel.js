@@ -14,7 +14,8 @@ const findWorkoutsByUser = async (userId) => {
   return db.any(
     `SELECT w.*, 
             COUNT(ws.id)::int as total_sets, 
-            COUNT(ws.id) FILTER (WHERE ws.completed = true)::int as completed_sets
+            COUNT(ws.id) FILTER (WHERE ws.completed = true)::int as completed_sets,
+            COALESCE(SUM(ws.weight_kg * ws.reps) FILTER (WHERE ws.completed = true AND ws.set_type = 'working'), 0)::float as volume
      FROM workouts w
      LEFT JOIN workout_sets ws ON w.id = ws.workout_id
      WHERE w.user_id = $1
