@@ -18,7 +18,8 @@ const Part = ({ muscle, data, onHover, children }) => {
   );
 };
 
-const Neutral = ({ children }) => <g fill="#1e293b" stroke="#0f172a" strokeWidth="1.2">{children}</g>;
+/** Parts we don't track (head, hands, neck, lower back) are shown as permanently "recovered". */
+const Neutral = ({ children }) => <g fill={colorFor(0)} stroke="#0f172a" strokeWidth="1.2" aria-hidden="true">{children}</g>;
 
 /** Front + back SVG body map coloured by rolling 7-day fatigue per muscle group. */
 const MuscleBodyMap = ({ recovery = [] }) => {

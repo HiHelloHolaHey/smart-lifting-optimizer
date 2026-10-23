@@ -5,6 +5,7 @@ export const auth = {
   login: (data) => client.post('/auth/login', data),
   logout: () => client.post('/auth/logout'),
   getMe: () => client.get('/auth/me'),
+  updateProfile: (data) => client.put('/auth/profile', data),
 };
 
 export const onboarding = {
@@ -21,7 +22,11 @@ export const workouts = {
   updateSet: (workoutId, setId, data) => client.put(`/workouts/${workoutId}/sets/${setId}`, data),
   getNextForExercise: (exerciseId) => client.get(`/workouts/next/${exerciseId}`),
   addSet: (workoutId, data) => client.post(`/workouts/${workoutId}/sets`, data),
-  updateStatus: (workoutId, status) => client.put(`/workouts/${workoutId}/status`, { status }),
+  start: (workoutId) => client.post(`/workouts/${workoutId}/start`),
+  finish: (workoutId) => client.post(`/workouts/${workoutId}/finish`),
+  discard: (workoutId) => client.post(`/workouts/${workoutId}/discard`),
+  addExercise: (workoutId, data) => client.post(`/workouts/${workoutId}/exercises`, data),
+  removeExercise: (workoutId, exerciseId) => client.delete(`/workouts/${workoutId}/exercises/${exerciseId}`),
   swapExercise: (workoutId, exerciseId, newExerciseId) => client.put(`/workouts/${workoutId}/exercises/${exerciseId}/swap`, { new_exercise_id: newExerciseId }),
   saveNotes: (workoutId, exerciseId, notes) => client.put(`/workouts/${workoutId}/exercises/${exerciseId}/notes`, { notes }),
 };
@@ -51,4 +56,6 @@ export const templates = {
 export const analytics = {
   recovery: () => client.get('/analytics/recovery'),
   volume: () => client.get('/analytics/volume'),
+  summary: () => client.get('/analytics/summary'),
+  profileStats: () => client.get('/analytics/profile-stats'),
 };

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ChevronDown, StickyNote } from 'lucide-react';
+import { ChevronDown, StickyNote, Check, Loader2, AlertCircle } from 'lucide-react';
 
-/** Collapsible per-exercise form/mobility notes. Saves on blur. */
-const ExerciseNotes = ({ value, onChange, onSave }) => {
+/** Collapsible per-exercise notes with debounced autosave and a visible save status. */
+const ExerciseNotes = ({ value, status = 'idle', onChange, onSave }) => {
   const [open, setOpen] = useState(Boolean(value));
 
   return (
@@ -13,8 +13,13 @@ const ExerciseNotes = ({ value, onChange, onSave }) => {
         className="flex w-full items-center gap-2 py-1 text-xs font-medium text-slate-400 hover:text-slate-200"
       >
         <StickyNote className="h-3.5 w-3.5" />
-        Notes{value && !open ? ' •' : ''}
-        <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+        Notes{value && !open ? <span className="text-indigo-400"> •</span> : ''}
+        <span className="ml-auto flex items-center gap-1 text-[11px]" aria-live="polite">
+          {status === 'saving' && <><Loader2 className="h-3 w-3 animate-spin" />Saving…</>}
+          {status === 'saved' && <span className="flex items-center gap-1 text-emerald-400"><Check className="h-3 w-3" />Saved</span>}
+          {status === 'error' && <span className="flex items-center gap-1 text-red-400"><AlertCircle className="h-3 w-3" />Not saved</span>}
+        </span>
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
         <textarea

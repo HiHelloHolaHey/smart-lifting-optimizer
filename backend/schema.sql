@@ -102,3 +102,10 @@ CREATE TABLE IF NOT EXISTS workout_templates (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_workout_templates_user ON workout_templates(user_id);
+
+
+-- 4. Workout lifecycle & custom naming (Phase 2.1)
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ;
+ALTER TABLE workouts ADD COLUMN IF NOT EXISTS ended_at TIMESTAMPTZ;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_one_active_workout_per_user ON workouts(user_id) WHERE status = 'active';
