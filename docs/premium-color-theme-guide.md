@@ -23,8 +23,8 @@ A quiet, professional palette: soft tonal neutrals, one muted champagne accent, 
 | Muted text | `--text-muted` | `#8E95A1` | Secondary text |
 | Accent | `--accent` | `#C2AE88` | Primary button, progress |
 | On accent | `--on-accent` | `#15181D` | Text on accent fills |
-| AI | `--ai` | `#8FA1C4` | Coach label, icon |
-| AI tint | `--ai-tint` | `#1F2633` | Coach card background |
+| AI | `--ai` | `#A8C5FA` | Coach label, icon |
+| AI tint | `--ai-tint` | `#19253A` | Coach card background |
 | Success | `--success` | `#7FA68A` | Completed |
 | Warning | `--warning` | `#C4A26B` | Rest, caution |
 | Danger | `--danger` | `#B87A7A` | Missed |
@@ -41,8 +41,8 @@ A quiet, professional palette: soft tonal neutrals, one muted champagne accent, 
 | Muted text | `--text-muted` | `#62666F` | Secondary text |
 | Accent | `--accent` | `#7A6742` | Primary button, progress |
 | On accent | `--on-accent` | `#F7F5F0` | Text on accent fills |
-| AI | `--ai` | `#566794` | Coach label, icon |
-| AI tint | `--ai-tint` | `#E6E9F0` | Coach card background |
+| AI | `--ai` | `#2B4C8C` | Coach label, icon |
+| AI tint | `--ai-tint` | `#E1EBF8` | Coach card background |
 | Success | `--success` | `#4F7D5C` | Completed |
 | Warning | `--warning` | `#8F6B2E` | Rest, caution |
 | Danger | `--danger` | `#9A4F4F` | Missed |
@@ -71,8 +71,8 @@ Body text needs 4.5:1; large text and icons need 3:1.
   --text-muted: #62666F;
   --accent: #7A6742;
   --on-accent: #F7F5F0;
-  --ai: #566794;
-  --ai-tint: #E6E9F0;
+  --ai: #2B4C8C;
+  --ai-tint: #E1EBF8;
   --success: #4F7D5C;
   --warning: #8F6B2E;
   --danger: #9A4F4F;
@@ -88,8 +88,8 @@ Body text needs 4.5:1; large text and icons need 3:1.
     --text-muted: #8E95A1;
     --accent: #C2AE88;
     --on-accent: #15181D;
-    --ai: #8FA1C4;
-    --ai-tint: #1F2633;
+    --ai: #A8C5FA;
+    --ai-tint: #19253A;
     --success: #7FA68A;
     --warning: #C4A26B;
     --danger: #B87A7A;

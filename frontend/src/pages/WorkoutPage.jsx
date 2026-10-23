@@ -21,23 +21,23 @@ import { groupExercises, hasValue, useNow } from '../utils/workoutSets';
 const REST_SECONDS = { working: 120, warmup: 60 };
 const NOTE_AUTOSAVE_MS = 800;
 
-/** Principle: Use the AI blue (--ai) on its soft tint (--ai-tint) for coach insights. */
+/** Principle: Use the AI blue (--ai) on its soft tint (--ai-tint) for coach insights with high contrast. */
 const OverloadChip = ({ exerciseId }) => {
   const { suggestion, loading } = useProgressOverload(exerciseId);
   if (loading || !suggestion || suggestion.suggested_weight_kg === undefined) return null;
   return (
     <div
-      className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-ai/25 bg-ai-tint px-2.5 py-1 text-xs font-medium text-ai"
+      className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-ai/50 bg-ai-tint px-2.5 py-1 text-xs font-semibold text-ai"
       title={suggestion.increment_reason}
     >
-      <TrendingUp className="h-3.5 w-3.5" />
-      Suggested: {suggestion.suggested_weight_kg}kg × {suggestion.suggested_reps}
-      {suggestion.source === 'ai' && <Sparkles className="h-3 w-3 text-ai" aria-label="AI-adjusted" />}
+      <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+      <span>Suggested: {suggestion.suggested_weight_kg}kg × {suggestion.suggested_reps}</span>
+      {suggestion.source === 'ai' && <Sparkles className="h-3.5 w-3.5 shrink-0 text-ai" aria-label="AI-adjusted" />}
     </div>
   );
 };
 
-/** 2-sentence AI coaching brief on --ai-tint (#1F2633) with --ai (#8FA1C4) label/icon. */
+/** 2-sentence AI coaching brief on --ai-tint with high-contrast --ai label/icon and primary --text body. */
 const CoachBrief = ({ workoutId }) => {
   const [brief, setBrief] = usePersistentState(`brief-${workoutId}`, null);
   const [loading, setLoading] = useState(!brief);
@@ -54,17 +54,17 @@ const CoachBrief = ({ workoutId }) => {
 
   if (!loading && !brief) return null;
   return (
-    <div className="rounded-2xl border border-ai/25 bg-ai-tint p-4">
-      <div className="mb-1.5 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ai">
-        <Sparkles className="h-4 w-4" />{brief?.source === 'ai' ? 'AI Coach' : 'Coach'}
+    <div className="rounded-2xl border border-ai/50 bg-ai-tint p-4">
+      <div className="mb-2 inline-flex items-center gap-1.5 rounded-md bg-surface/80 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-ai border border-ai/30">
+        <Sparkles className="h-3.5 w-3.5" />{brief?.source === 'ai' ? 'AI Coach' : 'Coach'}
       </div>
       {loading ? (
         <div className="space-y-2" aria-busy="true">
-          <div className="h-3 w-full animate-pulse rounded bg-raised" />
-          <div className="h-3 w-2/3 animate-pulse rounded bg-raised" />
+          <div className="h-3 w-full animate-pulse rounded bg-surface" />
+          <div className="h-3 w-2/3 animate-pulse rounded bg-surface" />
         </div>
       ) : (
-        <p className="text-sm leading-relaxed text-text">{brief.text}</p>
+        <p className="text-sm font-medium leading-relaxed text-text">{brief.text}</p>
       )}
     </div>
   );

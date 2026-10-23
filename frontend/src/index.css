@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Light mode (warm porcelain) — from premium-color-theme-guide.md */
+/* Light mode (warm porcelain) — from premium-color-theme-guide.md with high-contrast AI tokens */
 :root,
 :root[data-theme="light"] {
   --bg: #F4F2EE;
@@ -13,8 +13,8 @@
   --text-muted: #62666F;
   --accent: #7A6742;
   --on-accent: #F7F5F0;
-  --ai: #566794;
-  --ai-tint: #E6E9F0;
+  --ai: #2B4C8C;
+  --ai-tint: #E1EBF8;
   --success: #4F7D5C;
   --warning: #8F6B2E;
   --danger: #9A4F4F;
@@ -27,8 +27,8 @@
   --rgb-text-muted: 98 102 111;
   --rgb-accent: 122 103 66;
   --rgb-on-accent: 247 245 240;
-  --rgb-ai: 86 103 148;
-  --rgb-ai-tint: 230 233 240;
+  --rgb-ai: 43 76 140;
+  --rgb-ai-tint: 225 235 248;
   --rgb-success: 79 125 92;
   --rgb-warning: 143 107 46;
   --rgb-danger: 154 79 79;
@@ -45,8 +45,8 @@
     --text-muted: #8E95A1;
     --accent: #C2AE88;
     --on-accent: #15181D;
-    --ai: #8FA1C4;
-    --ai-tint: #1F2633;
+    --ai: #A8C5FA;
+    --ai-tint: #19253A;
     --success: #7FA68A;
     --warning: #C4A26B;
     --danger: #B87A7A;
@@ -59,8 +59,8 @@
     --rgb-text-muted: 142 149 161;
     --rgb-accent: 194 174 136;
     --rgb-on-accent: 21 24 29;
-    --rgb-ai: 143 161 196;
-    --rgb-ai-tint: 31 38 51;
+    --rgb-ai: 168 197 250;
+    --rgb-ai-tint: 25 37 58;
     --rgb-success: 127 166 138;
     --rgb-warning: 196 162 107;
     --rgb-danger: 184 122 122;
@@ -77,8 +77,8 @@
   --text-muted: #8E95A1;
   --accent: #C2AE88;
   --on-accent: #15181D;
-  --ai: #8FA1C4;
-  --ai-tint: #1F2633;
+  --ai: #A8C5FA;
+  --ai-tint: #19253A;
   --success: #7FA68A;
   --warning: #C4A26B;
   --danger: #B87A7A;
@@ -91,8 +91,8 @@
   --rgb-text-muted: 142 149 161;
   --rgb-accent: 194 174 136;
   --rgb-on-accent: 21 24 29;
-  --rgb-ai: 143 161 196;
-  --rgb-ai-tint: 31 38 51;
+  --rgb-ai: 168 197 250;
+  --rgb-ai-tint: 25 37 58;
   --rgb-success: 127 166 138;
   --rgb-warning: 196 162 107;
   --rgb-danger: 184 122 122;

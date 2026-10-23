@@ -239,9 +239,12 @@ const TemplatesPage = () => {
         </div>
       )}
 
-      <form onSubmit={generate} className="mb-6 flex flex-col gap-2 rounded-2xl border border-ai/25 bg-ai-tint p-3 sm:flex-row">
+      <form onSubmit={generate} className="mb-6 flex flex-col gap-2 rounded-2xl border border-ai/50 bg-ai-tint p-3.5 sm:flex-row sm:items-center">
+        <div className="flex items-center gap-2 px-1 text-xs font-semibold uppercase tracking-wider text-ai sm: shrink-0">
+          <Wand2 className="h-4 w-4" /> AI Builder
+        </div>
         <input
-          className="input-field flex-1"
+          className="input-field flex-1 !bg-surface"
           maxLength={500}
           placeholder='Describe a workout, e.g. "I only have dumbbells and 45 minutes"'
           value={aiPrompt}

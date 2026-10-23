@@ -65,7 +65,7 @@ const SwapModal = ({ isOpen, onClose, exercise, catalog, workoutExerciseIds, onS
           {error && <p className="mb-3 text-sm text-danger">{error}</p>}
           {result && (
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-ai/25 bg-ai-tint px-2.5 py-1 text-xs font-medium text-ai">
+              <div className="inline-flex items-center gap-1.5 rounded-lg border border-ai/50 bg-ai-tint px-2.5 py-1 text-xs font-semibold text-ai">
                 <Sparkles className="h-3.5 w-3.5" />
                 {result.source === 'ai' ? 'Picked by AI coach' : 'Rule-based picks (AI unavailable)'}
               </div>
