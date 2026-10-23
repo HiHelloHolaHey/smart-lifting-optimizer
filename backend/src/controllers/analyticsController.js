@@ -76,7 +76,7 @@ const summary = async (req, res, next) => {
 const profileStats = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const [totals, topLifts, muscles, weeks] = await Promise.all([
+    const [totals, topLifts, muscles, weeks, oneRepMaxes] = await Promise.all([
       db.one(
         `SELECT COUNT(*) FILTER (WHERE w.status = 'completed')::int AS workouts,
                 COALESCE(SUM(EXTRACT(EPOCH FROM (w.ended_at - w.started_at))) FILTER (WHERE w.status = 'completed' AND w.ended_at IS NOT NULL AND w.started_at IS NOT NULL), 0)::float AS seconds,
@@ -105,6 +105,12 @@ const profileStats = async (req, res, next) => {
          FROM workouts WHERE user_id = $1 AND status = 'completed' ORDER BY week DESC`,
         [userId]
       ),
+      db.any(
+        `SELECT orm.exercise_id, e.name, e.muscle_group, orm.estimated_1rm_kg::float AS estimated_1rm_kg, orm.calculated_at
+         FROM one_rep_maxes orm JOIN exercises e ON e.id = orm.exercise_id
+         WHERE orm.user_id = $1 ORDER BY orm.estimated_1rm_kg DESC LIMIT 6`,
+        [userId]
+      ),
     ]);
 
     // Streak = consecutive weeks (ending this week or last week) with at least one completed workout
@@ -121,6 +127,7 @@ const profileStats = async (req, res, next) => {
       avg_minutes: totals.timed ? Math.round(totals.seconds / totals.timed / 60) : null,
       streak_weeks: streak,
       top_lifts: topLifts,
+      one_rep_maxes: oneRepMaxes,
       favourite_muscle: muscles[0]?.muscle_group || null,
     });
   } catch (error) {

@@ -9,6 +9,7 @@ router.get('/next/:exerciseId', verifyToken, workoutController.getNextForExercis
 router.get('/', verifyToken, workoutController.getWorkouts);
 router.get('/:id', verifyToken, workoutController.getWorkout);
 router.put('/:id/status', verifyToken, workoutController.updateStatus);
+router.patch('/:id/reschedule', verifyToken, workoutController.rescheduleWorkout);
 router.post('/:id/start', verifyToken, workoutController.startWorkout);
 router.post('/:id/finish', verifyToken, workoutController.finishWorkout);
 router.post('/:id/discard', verifyToken, workoutController.discardWorkout);

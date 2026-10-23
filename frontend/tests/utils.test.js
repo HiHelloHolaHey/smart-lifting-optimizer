@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { cn } from '../src/utils/cn.js';
-import { workoutName, formatDuration, formatClock, GOAL_LABELS, LEVEL_LABELS } from '../src/utils/labels.js';
+import { workoutName, formatDuration, formatClock, calculateBmi, GOAL_LABELS, LEVEL_LABELS } from '../src/utils/labels.js';
 import { groupExercises, findNextSet, hasValue } from '../src/utils/workoutSets.js';
 
 describe('frontend/src/utils/cn (shadcn class merger)', () => {
@@ -34,6 +34,14 @@ describe('frontend/src/utils/labels', () => {
   it('exports human-readable goal and experience level labels', () => {
     assert.equal(GOAL_LABELS.hypertrophy, 'Hypertrophy');
     assert.equal(LEVEL_LABELS.intermediate, 'Intermediate');
+  });
+
+  it('calculateBmi computes BMI and classifies Underweight, Normal, and Overweight', () => {
+    assert.equal(calculateBmi(null, 70), null);
+    assert.equal(calculateBmi(175, 0), null);
+    assert.deepEqual(calculateBmi(180, 55), { bmi: 17, category: 'Underweight', variant: 'warning' });
+    assert.deepEqual(calculateBmi(175, 70), { bmi: 22.9, category: 'Normal', variant: 'success' });
+    assert.deepEqual(calculateBmi(175, 85), { bmi: 27.8, category: 'Overweight', variant: 'warning' });
   });
 });
 

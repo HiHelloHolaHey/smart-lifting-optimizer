@@ -30,3 +30,24 @@ export const formatClock = (totalSeconds) => {
   const ss = String(sec).padStart(2, '0');
   return h > 0 ? `${h}:${mm}:${ss}` : `${m}:${ss}`;
 };
+
+/**
+ * Calculates Body Mass Index (BMI) and determines classification:
+ * - < 18.5: Underweight
+ * - 18.5 - 24.9: Normal
+ * - >= 25.0: Overweight
+ */
+export const calculateBmi = (heightCm, weightKg) => {
+  const h = Number(heightCm);
+  const w = Number(weightKg);
+  if (!h || !w || h <= 0 || w <= 0 || Number.isNaN(h) || Number.isNaN(w)) return null;
+  const heightMeters = h / 100;
+  const bmi = Math.round((w / (heightMeters * heightMeters)) * 10) / 10;
+  if (bmi < 18.5) {
+    return { bmi, category: 'Underweight', variant: 'warning' };
+  }
+  if (bmi < 25.0) {
+    return { bmi, category: 'Normal', variant: 'success' };
+  }
+  return { bmi, category: 'Overweight', variant: 'warning' };
+};

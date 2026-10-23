@@ -1,6 +1,7 @@
 const workoutModel = require('../models/workoutModel');
 const workoutSetModel = require('../models/workoutSetModel');
 const workoutLogModel = require('../models/workoutLogModel');
+const onermModel = require('../models/onermModel');
 const progressiveOverloadService = require('../services/progressiveOverloadService');
 const db = require('../config/db');
 
@@ -83,7 +84,25 @@ const updateSet = async (req, res, next) => {
       return res.status(400).json({ error: 'Invalid weight or reps' });
     }
 
-    res.status(200).json(await workoutSetModel.updateSet(setId, updates));
+    const updated = await workoutSetModel.updateSet(setId, updates);
+
+    // Automatic Epley 1RM & Personal Record (PR) detection on completed working sets
+    if (updated && updated.completed && updated.set_type === 'working' && Number(updated.weight_kg) > 0 && Number(updated.reps) > 0) {
+      const w = Number(updated.weight_kg);
+      const r = Math.min(30, Number(updated.reps));
+      const est1RM = Math.round((r === 1 ? w : w * (1 + r / 30)) * 10) / 10;
+      const existingOrm = await db.oneOrNone(
+        'SELECT estimated_1rm_kg FROM one_rep_maxes WHERE user_id = $1 AND exercise_id = $2',
+        [req.user.id, updated.exercise_id]
+      );
+      if (!existingOrm || est1RM > Number(existingOrm.estimated_1rm_kg)) {
+        await onermModel.upsertOneRM(req.user.id, updated.exercise_id, est1RM);
+        updated.new_pr = true;
+        updated.estimated_1rm_kg = est1RM;
+      }
+    }
+
+    res.status(200).json(updated);
   } catch (error) {
     next(error);
   }
@@ -120,6 +139,28 @@ const updateStatus = async (req, res, next) => {
     if (!VALID_STATUS.includes(req.body.status)) return res.status(400).json({ error: 'Invalid status' });
     if (workout.status === 'active' || workout.status === 'completed') return res.status(409).json({ error: 'Use finish or discard for this workout.' });
     res.status(200).json(await workoutModel.updateWorkoutStatus(workout.id, req.body.status));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/** Reschedules a planned (scheduled/skipped) workout to a new date/time. */
+const rescheduleWorkout = async (req, res, next) => {
+  try {
+    const workout = await loadOwned(req, res);
+    if (!workout) return;
+    if (workout.status === 'active' || workout.status === 'completed') {
+      return res.status(409).json({ error: 'Cannot reschedule an active or completed workout.' });
+    }
+    const parsed = new Date(req.body.scheduled_date);
+    if (!req.body.scheduled_date || Number.isNaN(parsed.getTime())) {
+      return res.status(400).json({ error: 'Please provide a valid scheduled_date.' });
+    }
+    const updated = await db.one(
+      "UPDATE workouts SET scheduled_date = $1, status = 'scheduled' WHERE id = $2 RETURNING *",
+      [parsed.toISOString(), workout.id]
+    );
+    res.status(200).json(updated);
   } catch (error) {
     next(error);
   }
@@ -269,4 +310,4 @@ const getNextForExercise = async (req, res, next) => {
   }
 };
 
-module.exports = { getWorkouts, getWorkout, updateSet, addSet, updateStatus, saveNotes, swapExercise, getNextForExercise, startWorkout, finishWorkout, discardWorkout, addExercise, removeExercise };
+module.exports = { getWorkouts, getWorkout, updateSet, addSet, updateStatus, rescheduleWorkout, saveNotes, swapExercise, getNextForExercise, startWorkout, finishWorkout, discardWorkout, addExercise, removeExercise };

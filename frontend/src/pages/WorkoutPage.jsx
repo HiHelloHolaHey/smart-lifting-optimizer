@@ -180,7 +180,15 @@ const WorkoutPage = () => {
     }));
 
     try {
-      await workoutsApi.updateSet(id, set.id, { weight_kg: weight, reps: Number.isNaN(reps) ? null : reps, completed: nowDone });
+      const { data: updatedSet } = await workoutsApi.updateSet(id, set.id, {
+        weight_kg: weight,
+        reps: Number.isNaN(reps) ? null : reps,
+        completed: nowDone,
+      });
+      if (updatedSet?.new_pr) {
+        patchSet(set.id, { new_pr: true, estimated_1rm_kg: updatedSet.estimated_1rm_kg });
+        setToast(`🏆 New Personal Record! Est. 1RM: ${updatedSet.estimated_1rm_kg} kg`);
+      }
     } catch (err) {
       patchSet(set.id, { completed: set.completed });
       setDraft((d) => ({ ...d, rest: null }));
@@ -356,9 +364,27 @@ const WorkoutPage = () => {
                 Adjust exercises and numbers now. Press <b>Start Now</b> when you're at the gym to start the clock and log sets.
               </p>
             </div>
-            <Button onClick={startNow} loading={busy} className="w-full sm:w-auto">
-              <Play className="mr-2 h-4 w-4" />Start Now
-            </Button>
+            <div className="flex w-full shrink-0 gap-2 sm:w-auto">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={async () => {
+                  try {
+                    await workoutsApi.updateStatus(id, 'skipped');
+                    navigate('/workouts');
+                  } catch (err) {
+                    fail(err, 'Could not skip workout.');
+                  }
+                }}
+              >
+                Skip
+              </Button>
+              <Button onClick={startNow} loading={busy} className="flex-1 sm:flex-initial">
+                <Play className="mr-2 h-4 w-4" />Start Now
+              </Button>
+            </div>
           </div>
         )}
 

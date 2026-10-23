@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Lock } from 'lucide-react';
+import { Check, Lock, Trophy } from 'lucide-react';
 
 /**
  * One set row: label (number or "W"), previous-performance ghost text,
@@ -20,8 +20,16 @@ const SetRow = ({ set, label, previous, values, placeholders, canLog, locked = f
       <span className={`text-center text-sm font-medium ${isWarmup ? 'text-warning' : 'text-text-muted'}`} title={isWarmup ? 'Warm-up set' : `Set ${label}`}>
         {label}
       </span>
-      <span className="truncate text-xs italic text-text-muted" title="Your previous performance for this set">
+      <span className="flex items-center gap-1.5 truncate text-xs italic text-text-muted" title="Your previous performance for this set">
         {previous ? `${Number(previous.weight_kg)} kg × ${previous.reps}` : '—'}
+        {set.new_pr && (
+          <span
+            className="inline-flex items-center gap-0.5 rounded bg-accent/20 px-1.5 py-0.5 font-mono text-[10px] font-bold not-italic text-accent"
+            title={`New Estimated 1RM PR: ${set.estimated_1rm_kg} kg`}
+          >
+            <Trophy className="h-2.5 w-2.5" /> PR
+          </span>
+        )}
       </span>
       <input
         type="number" inputMode="decimal" step="0.5" min="0" aria-label={`Weight for set ${label}`}

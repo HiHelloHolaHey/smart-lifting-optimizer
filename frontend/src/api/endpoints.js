@@ -13,6 +13,7 @@ export const onboarding = {
 };
 
 export const schedule = {
+  get: () => client.get('/schedule'),
   generate: (data) => client.post('/schedule/generate', data),
 };
 
@@ -20,6 +21,8 @@ export const workouts = {
   getAll: () => client.get('/workouts'),
   getById: (id) => client.get(`/workouts/${id}`),
   updateSet: (workoutId, setId, data) => client.put(`/workouts/${workoutId}/sets/${setId}`, data),
+  updateStatus: (workoutId, status) => client.put(`/workouts/${workoutId}/status`, { status }),
+  reschedule: (workoutId, scheduled_date) => client.patch(`/workouts/${workoutId}/reschedule`, { scheduled_date }),
   getNextForExercise: (exerciseId) => client.get(`/workouts/next/${exerciseId}`),
   addSet: (workoutId, data) => client.post(`/workouts/${workoutId}/sets`, data),
   start: (workoutId) => client.post(`/workouts/${workoutId}/start`),

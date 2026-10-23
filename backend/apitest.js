@@ -149,24 +149,40 @@ const main = async () => {
 
   r = await call('POST', `/workouts/${w1.id}/start`);
   const s2 = (await call('GET', `/workouts/${w1.id}`)).body.sets.find((s) => s.set_type === 'working');
-  r = await call('PUT', `/workouts/${w1.id}/sets/${s2.id}`, { weight_kg: 60, reps: 8, completed: true });
-  check('log after restart', r.status === 200);
+  r = await call('PUT', `/workouts/${w1.id}/sets/${s2.id}`, { weight_kg: 120, reps: 8, completed: true });
+  check('log after restart & detect new 1RM PR', r.status === 200 && r.body.new_pr === true && r.body.estimated_1rm_kg > 120, JSON.stringify(r.body));
   r = await call('POST', `/workouts/${w1.id}/finish`);
   check('finish workout', r.status === 200 && r.body.status === 'completed' && r.body.ended_at);
   r = await call('POST', `/workouts/${w1.id}/exercises`, { exercise_id: extra.id });
   check('completed workout cannot be edited', r.status === 409);
 
+  console.log('\n-- Schedule editor & workout reschedule');
+  r = await call('GET', '/schedule');
+  check('get saved schedule', r.status === 200 && r.body.preferred_frequency === 4);
+  r = await call('POST', '/schedule/generate', {
+    gymOpenTime: '07:00',
+    gymCloseTime: '21:00',
+    busyTimes: [{ day: 'monday', start: '09:00', end: '12:00' }],
+    preferredFrequency: 4,
+    goalPriority: 'morning',
+    realignWorkouts: true,
+  });
+  check('regenerate schedule & realign workouts', r.status === 200 && Array.isArray(r.body.slots) && r.body.slots.length > 0);
+  const newIso = new Date(Date.now() + 86400000 * 3).toISOString();
+  r = await call('PATCH', `/workouts/${w2.id}/reschedule`, { scheduled_date: newIso });
+  check('reschedule individual workout', r.status === 200 && r.body.status === 'scheduled');
+
   console.log('\n-- History, previous performance & stats');
   r = await call('GET', `/workouts/${w2.id}`);
   const same = r.body.sets.find((s) => s.exercise_id === s2.exercise_id);
-  check('previous performance available in next workout', r.body.previous.some((p) => p.exercise_id === s2.exercise_id && Number(p.weight_kg) === 60 && p.reps === 8));
+  check('previous performance available in next workout', r.body.previous.some((p) => p.exercise_id === s2.exercise_id && Number(p.weight_kg) === 120 && p.reps === 8));
   r = await call('GET', '/workouts');
   const done = r.body.find((w) => w.id === w1.id);
-  check('history entry has volume + duration fields', done.status === 'completed' && done.volume === 480 && done.started_at && done.ended_at, JSON.stringify(done));
+  check('history entry has volume + duration fields', done.status === 'completed' && done.volume === 960 && done.started_at && done.ended_at, JSON.stringify(done));
   r = await call('GET', '/analytics/profile-stats');
-  check('profile stats reflect completed workout', r.body.workouts === 1 && r.body.sets === 1 && r.body.volume === 480 && r.body.top_lifts.length === 1 && r.body.streak_weeks >= 1, JSON.stringify(r.body));
+  check('profile stats reflect completed workout & 1RM PRs', r.body.workouts === 1 && r.body.sets === 1 && r.body.volume === 960 && r.body.top_lifts.length === 1 && Array.isArray(r.body.one_rep_maxes) && r.body.one_rep_maxes.length > 0 && r.body.streak_weeks >= 1, JSON.stringify(r.body));
   r = await call('GET', '/analytics/summary');
-  check('summary reflects activity', r.body.week.sets === 1 || r.body.weekly_volume.some((w) => w.volume === 480), JSON.stringify(r.body.week));
+  check('summary reflects activity', r.body.week.sets === 1 || r.body.weekly_volume.some((w) => w.volume === 960), JSON.stringify(r.body.week));
   r = await call('GET', '/analytics/recovery');
   check('recovery map data', r.status === 200 && r.body.length === 8 && r.body.some((m) => m.sets > 0));
 
