@@ -105,7 +105,7 @@ const TimeInput = ({ value = '00:00', onChange, label, id, disabled = false }) =
 
   const itemCls = (active) =>
     `w-full py-1.5 text-center text-sm rounded-lg transition-colors ${
-      active ? 'bg-electric-indigo text-white font-semibold' : 'text-slate-300 hover:bg-slate-700/60'
+      active ? 'bg-accent text-on-accent font-medium' : 'text-text-muted hover:bg-raised hover:text-text'
     }`;
 
   const numCls =

@@ -265,8 +265,8 @@ const OnboardingPage = () => {
                   onClick={() => updateForm('primary_goal', goal.id)}
                   className={`p-6 rounded-2xl border flex flex-col items-center justify-center gap-3 transition-all ${
                     formData.primary_goal === goal.id
-                      ? 'border-electric-indigo bg-indigo-500/10 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                      : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-600'
+                      ? 'border-accent bg-accent/10 text-accent'
+                      : 'border-border bg-raised text-text-muted hover:border-accent/40'
                   }`}
                 >
                   <span className="text-3xl">{goal.emoji}</span>
@@ -297,7 +297,7 @@ const OnboardingPage = () => {
                       : 'border-slate-700 bg-slate-800/40 hover:border-slate-600'
                   }`}
                 >
-                  <div className={`mt-0.5 rounded-full p-0.5 ${formData.split_preference === split.id ? 'bg-electric-indigo text-white' : 'bg-slate-700 text-transparent'}`}>
+                  <div className={`mt-0.5 rounded-full p-0.5 ${formData.split_preference === split.id ? 'bg-accent text-on-accent' : 'bg-border text-transparent'}`}>
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                   <div>
@@ -332,8 +332,8 @@ const OnboardingPage = () => {
                     onClick={() => { updateForm('sameGym', opt.v); clearErr('gymTime'); }}
                     className={`p-5 rounded-2xl border text-center font-medium transition-all ${
                       formData.sameGym === opt.v
-                        ? 'border-electric-indigo bg-indigo-500/10 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]'
-                        : 'border-slate-700 bg-slate-800/40 text-slate-300 hover:border-slate-600'
+                        ? 'border-accent bg-accent/10 text-accent'
+                        : 'border-border bg-raised text-text-muted hover:border-accent/40'
                     }`}
                   >
                     {opt.label}
@@ -468,9 +468,9 @@ const OnboardingPage = () => {
             <span>Step {step} of 4</span>
             <span>{Math.round((step / 4) * 100)}%</span>
           </div>
-          <div className="h-2 bg-slate-800 rounded-full overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((step / 4) * 100)}>
+          <div className="h-1 bg-raised rounded-full overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((step / 4) * 100)}>
             <div
-              className="h-full bg-electric-indigo transition-all duration-500 ease-out"
+              className="h-full bg-accent transition-all duration-500 ease-out"
               style={{ width: `${(step / 4) * 100}%` }}
             />
           </div>

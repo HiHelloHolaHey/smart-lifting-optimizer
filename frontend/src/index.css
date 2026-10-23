@@ -2,35 +2,148 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light mode (warm porcelain) — from premium-color-theme-guide.md */
+:root,
+:root[data-theme="light"] {
+  --bg: #F4F2EE;
+  --surface: #FAF9F6;
+  --raised: #ECE9E3;
+  --border: #DEDAD2;
+  --text: #2A2D33;
+  --text-muted: #62666F;
+  --accent: #7A6742;
+  --on-accent: #F7F5F0;
+  --ai: #566794;
+  --ai-tint: #E6E9F0;
+  --success: #4F7D5C;
+  --warning: #8F6B2E;
+  --danger: #9A4F4F;
+
+  --rgb-bg: 244 242 238;
+  --rgb-surface: 250 249 246;
+  --rgb-raised: 236 233 227;
+  --rgb-border: 222 218 210;
+  --rgb-text: 42 45 51;
+  --rgb-text-muted: 98 102 111;
+  --rgb-accent: 122 103 66;
+  --rgb-on-accent: 247 245 240;
+  --rgb-ai: 86 103 148;
+  --rgb-ai-tint: 230 233 240;
+  --rgb-success: 79 125 92;
+  --rgb-warning: 143 107 46;
+  --rgb-danger: 154 79 79;
+}
+
+/* System dark mode preference */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181D;
+    --surface: #1B1F25;
+    --raised: #222730;
+    --border: #2A303A;
+    --text: #DDE0E5;
+    --text-muted: #8E95A1;
+    --accent: #C2AE88;
+    --on-accent: #15181D;
+    --ai: #8FA1C4;
+    --ai-tint: #1F2633;
+    --success: #7FA68A;
+    --warning: #C4A26B;
+    --danger: #B87A7A;
+
+    --rgb-bg: 21 24 29;
+    --rgb-surface: 27 31 37;
+    --rgb-raised: 34 39 48;
+    --rgb-border: 42 48 58;
+    --rgb-text: 221 224 229;
+    --rgb-text-muted: 142 149 161;
+    --rgb-accent: 194 174 136;
+    --rgb-on-accent: 21 24 29;
+    --rgb-ai: 143 161 196;
+    --rgb-ai-tint: 31 38 51;
+    --rgb-success: 127 166 138;
+    --rgb-warning: 196 162 107;
+    --rgb-danger: 184 122 122;
+  }
+}
+
+/* Explicit dark mode (midnight slate) — default on <html data-theme="dark"> */
+:root[data-theme="dark"] {
+  --bg: #15181D;
+  --surface: #1B1F25;
+  --raised: #222730;
+  --border: #2A303A;
+  --text: #DDE0E5;
+  --text-muted: #8E95A1;
+  --accent: #C2AE88;
+  --on-accent: #15181D;
+  --ai: #8FA1C4;
+  --ai-tint: #1F2633;
+  --success: #7FA68A;
+  --warning: #C4A26B;
+  --danger: #B87A7A;
+
+  --rgb-bg: 21 24 29;
+  --rgb-surface: 27 31 37;
+  --rgb-raised: 34 39 48;
+  --rgb-border: 42 48 58;
+  --rgb-text: 221 224 229;
+  --rgb-text-muted: 142 149 161;
+  --rgb-accent: 194 174 136;
+  --rgb-on-accent: 21 24 29;
+  --rgb-ai: 143 161 196;
+  --rgb-ai-tint: 31 38 51;
+  --rgb-success: 127 166 138;
+  --rgb-warning: 196 162 107;
+  --rgb-danger: 184 122 122;
+}
+
 @layer base {
-  body { 
-    @apply bg-slate-950 text-slate-100 font-sans; 
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    @apply font-sans antialiased;
   }
-  ::-webkit-scrollbar { 
-    @apply w-1.5; 
+  h1, h2 {
+    font-family: 'Fraunces', Georgia, serif;
+    letter-spacing: -0.015em;
   }
-  ::-webkit-scrollbar-track { 
-    @apply bg-slate-900; 
+  ::-webkit-scrollbar {
+    @apply w-1.5;
   }
-  ::-webkit-scrollbar-thumb { 
-    @apply bg-slate-700 rounded-full; 
+  ::-webkit-scrollbar-track {
+    background-color: var(--bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    @apply rounded-full;
   }
 }
 
 @layer components {
-  .glass-card { 
-    @apply backdrop-blur-md bg-slate-800/60 border border-slate-700/50 rounded-2xl; 
+  /* Principles: keep surfaces within a few steps of each other; separate cards with thin borders, not shadows or strong fills */
+  .glass-card {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    @apply rounded-2xl;
   }
-  .btn-primary { 
-    @apply bg-electric-indigo hover:bg-indigo-500 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 active:scale-95; 
+  .btn-primary {
+    background-color: var(--accent);
+    color: var(--on-accent);
+    @apply font-medium px-6 py-3 rounded-xl transition-all duration-150 hover:opacity-90 active:scale-[0.99];
   }
-  .btn-ghost { 
-    @apply bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300 font-medium px-5 py-2.5 rounded-xl transition-all duration-200; 
+  .btn-ghost {
+    background-color: var(--raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    @apply font-medium px-5 py-2.5 rounded-xl transition-all duration-150 hover:border-accent/60;
   }
-  .input-field { 
-    @apply bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all w-full; 
+  .input-field {
+    background-color: var(--raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    @apply rounded-xl px-4 py-3 placeholder-text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/40 transition-all w-full;
   }
 }
 
-@keyframes fadeIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
-
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: none; } }

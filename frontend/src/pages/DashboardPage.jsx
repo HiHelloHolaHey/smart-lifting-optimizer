@@ -15,23 +15,23 @@ import { workoutName, formatClock } from '../utils/labels';
 import { findNextSet, useNow } from '../utils/workoutSets';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const HEAT = ['bg-slate-800', 'bg-indigo-900', 'bg-indigo-700', 'bg-indigo-500', 'bg-electric-indigo'];
+const HEAT = ['bg-raised', 'bg-accent/25', 'bg-accent/50', 'bg-accent/75', 'bg-accent'];
 
 const NextSessionTimer = ({ targetDate }) => {
   const { days, hours, minutes, seconds, isPast } = useCountdown(targetDate);
   if (!targetDate) return null;
-  if (isPast) return <div className="text-xl font-bold text-white">Ready when you are</div>;
+  if (isPast) return <div className="text-lg font-medium text-text">Ready when you are</div>;
   const unit = (v, label, pad = true) => (
     <div className="flex flex-col items-center">
-      <span className="text-2xl font-bold">{pad ? String(v).padStart(2, '0') : v}</span>
-      <span className="text-xs text-indigo-200">{label}</span>
+      <span className="text-2xl font-medium tabular-nums text-text">{pad ? String(v).padStart(2, '0') : v}</span>
+      <span className="text-xs text-text-muted">{label}</span>
     </div>
   );
   return (
-    <div className="flex gap-4 text-white" aria-label="Time until next session">
-      {unit(days, 'Days', false)}<span className="text-2xl font-bold">:</span>
-      {unit(hours, 'Hrs')}<span className="text-2xl font-bold">:</span>
-      {unit(minutes, 'Min')}<span className="text-2xl font-bold">:</span>
+    <div className="flex gap-4 text-text" aria-label="Time until next session">
+      {unit(days, 'Days', false)}<span className="text-2xl font-medium text-text-muted">:</span>
+      {unit(hours, 'Hrs')}<span className="text-2xl font-medium text-text-muted">:</span>
+      {unit(minutes, 'Min')}<span className="text-2xl font-medium text-text-muted">:</span>
       {unit(seconds, 'Sec')}
     </div>
   );
@@ -49,11 +49,10 @@ const InProgressCard = ({ workout, onFinished }) => {
     let alive = true;
     const load = () => workoutsApi.getById(workout.id).then(({ data }) => alive && setDetail(data)).catch(() => {});
     load();
-    const id = setInterval(load, 15000); // pick up sets logged in another tab
+    const id = setInterval(load, 15000);
     return () => { alive = false; clearInterval(id); };
   }, [workout.id]);
 
-  // Rest timer lives in the workout page's local draft; read it so the dashboard shows the same countdown
   let restLeft = 0;
   try {
     const rest = JSON.parse(localStorage.getItem(`workout-draft-${workout.id}`) || 'null')?.rest;
@@ -63,6 +62,7 @@ const InProgressCard = ({ workout, onFinished }) => {
   const next = useMemo(() => (detail ? findNextSet(detail.sets) : null), [detail]);
   const doneSets = detail ? detail.sets.filter((s) => s.completed).length : 0;
   const totalSets = detail ? detail.sets.length : 0;
+  const pct = totalSets > 0 ? Math.min(100, Math.round((doneSets / totalSets) * 100)) : 0;
   const elapsed = workout.started_at ? (now - new Date(workout.started_at).getTime()) / 1000 : 0;
 
   const finish = async () => {
@@ -78,46 +78,56 @@ const InProgressCard = ({ workout, onFinished }) => {
   };
 
   return (
-    <Card className="relative overflow-hidden border-emerald-500/30 bg-gradient-to-br from-emerald-900/30 to-slate-900 lg:col-span-2">
-      <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-emerald-400/10 blur-3xl" />
-      <div className="relative z-10 flex flex-col gap-6">
+    <Card className="lg:col-span-2">
+      <div className="flex flex-col gap-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <Badge variant="success" className="mb-3">
-              <span className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-400" />Workout in progress
-            </Badge>
-            <h2 className="text-2xl font-bold text-slate-100">{workoutName(workout)}</h2>
-            <p className="mt-1 text-sm text-slate-400">{doneSets} of {totalSets || '–'} sets done</p>
+            <Badge variant="success" className="mb-3">Workout in progress</Badge>
+            <h2 className="text-2xl font-medium text-text">{workoutName(workout)}</h2>
+            <p className="mt-1 text-sm text-text-muted">{doneSets} of {totalSets || '–'} sets completed</p>
           </div>
           <div className="text-right">
-            <div className="flex items-center justify-end gap-2 font-mono text-3xl font-bold text-emerald-300" aria-label="Elapsed time"><Timer className="h-6 w-6" />{formatClock(elapsed)}</div>
-            <div className="text-xs text-slate-500">elapsed</div>
+            <div className="flex items-center justify-end gap-2 font-mono text-2xl font-medium tabular-nums text-success" aria-label="Elapsed time">
+              <Timer className="h-5 w-5" />{formatClock(elapsed)}
+            </div>
+            <div className="text-xs text-text-muted">elapsed</div>
           </div>
         </div>
 
+        {/* Thin progress line per theme guide */}
+        <div className="h-1 w-full overflow-hidden rounded-full bg-raised">
+          <div className="h-full bg-accent transition-all duration-300" style={{ width: `${pct}%` }} />
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl bg-slate-900/60 p-3">
-            <div className="text-xs uppercase tracking-wide text-slate-500">Up next</div>
-            <div className="mt-1 text-sm font-semibold text-slate-100">
+          <div className="rounded-xl border border-border bg-raised p-3">
+            <div className="text-xs uppercase tracking-wide text-text-muted">Up next</div>
+            <div className="mt-1 text-sm font-medium text-text">
               {!detail ? 'Loading…' : next ? `${next.exercise.exercise_name} · ${next.set.set_type === 'warmup' ? 'warm-up' : `set ${next.set.set_number}`}` : 'All sets done — finish when ready'}
             </div>
           </div>
-          <div className="rounded-xl bg-slate-900/60 p-3">
-            <div className="text-xs uppercase tracking-wide text-slate-500">Rest</div>
-            <div className={`mt-1 font-mono text-sm font-semibold ${restLeft > 0 ? 'text-cyan-300' : 'text-slate-500'}`}>
+          <div className="rounded-xl border border-border bg-raised p-3">
+            <div className="text-xs uppercase tracking-wide text-text-muted">Rest</div>
+            <div className={`mt-1 flex items-center gap-1.5 font-mono text-sm font-medium ${restLeft > 0 ? 'text-warning' : 'text-text-muted'}`}>
+              {restLeft > 0 && <span className="h-1.5 w-1.5 rounded-full bg-warning" aria-hidden />}
               {restLeft > 0 ? `${formatClock(restLeft)} remaining` : 'Not resting'}
             </div>
           </div>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button onClick={() => navigate(`/workout/${workout.id}`)} className="flex-1"><Play className="mr-2 h-4 w-4" />Go to workout</Button>
-          <Button variant="ghost" onClick={() => setConfirmFinish(true)} className="flex-1"><CheckCircle2 className="mr-2 h-4 w-4" />Finish workout</Button>
+          <Button onClick={() => navigate(`/workout/${workout.id}`)} className="flex-1">
+            <Play className="mr-2 h-4 w-4" />Go to workout
+          </Button>
+          <Button variant="ghost" onClick={() => setConfirmFinish(true)} className="flex-1">
+            <CheckCircle2 className="mr-2 h-4 w-4" />Finish workout
+          </Button>
         </div>
       </div>
 
       <ConfirmDialog
-        isOpen={confirmFinish} onClose={() => setConfirmFinish(false)}
+        isOpen={confirmFinish}
+        onClose={() => setConfirmFinish(false)}
         title="Finish this workout?"
         message={`You've completed ${doneSets} of ${totalSets} sets. Finishing saves it to your history.`}
         actions={[
@@ -160,11 +170,11 @@ const DashboardPage = () => {
     <div>
       <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-3xl font-bold text-slate-100">{user?.first_name ? `Hey ${user.first_name}` : 'Command Center'}</h1>
-          <p className="text-slate-400">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+          <h1 className="mb-1 text-3xl font-medium text-text">{user?.first_name ? `Hey, ${user.first_name}` : 'Command Center'}</h1>
+          <p className="text-text-muted">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
         </div>
         <a href="/api/schedule/export" download className="btn-ghost flex items-center gap-2 text-sm">
-          <CalendarPlus className="h-4 w-4" /> Sync to Calendar
+          <CalendarPlus className="h-4 w-4 text-text-muted" /> Sync to Calendar
         </a>
       </header>
 
@@ -172,19 +182,18 @@ const DashboardPage = () => {
         {active ? (
           <InProgressCard workout={active} onFinished={() => { fetchWorkouts(); loadAnalytics(); }} />
         ) : (
-          <Card className="group relative overflow-hidden border-indigo-500/30 bg-gradient-to-br from-indigo-900/40 to-slate-900 lg:col-span-2">
-            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-electric-indigo/10 blur-3xl" />
-            <div className="relative z-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
+          <Card className="lg:col-span-2">
+            <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
               <div>
                 <Badge variant="info" className="mb-3">Next Session</Badge>
-                <h2 className="mb-2 text-2xl font-bold text-slate-100">{nextWorkout ? workoutName(nextWorkout) : 'No upcoming workouts'}</h2>
-                <p className="mb-6 text-slate-400">
+                <h2 className="mb-2 text-2xl font-medium text-text">{nextWorkout ? workoutName(nextWorkout) : 'No upcoming workouts'}</h2>
+                <p className="mb-6 text-text-muted">
                   {nextWorkout ? new Date(nextWorkout.scheduled_date).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Build a routine in Templates to get going.'}
                 </p>
                 <NextSessionTimer targetDate={nextWorkout?.scheduled_date} />
               </div>
               {nextWorkout && (
-                <Button onClick={() => navigate(`/workout/${nextWorkout.id}`)} className="w-full shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] md:w-auto">
+                <Button onClick={() => navigate(`/workout/${nextWorkout.id}`)} className="w-full md:w-auto">
                   Start Workout <ChevronRight className="ml-1 h-5 w-5" />
                 </Button>
               )}
@@ -193,16 +202,16 @@ const DashboardPage = () => {
         )}
 
         <Card>
-          <h3 className="mb-4 text-lg font-semibold text-slate-100">Weekly Stats</h3>
-          <div className="space-y-4">
+          <h3 className="mb-4 text-lg font-medium text-text">Weekly Stats</h3>
+          <div className="space-y-3">
             {[
-              { icon: Activity, color: 'text-indigo-400', label: 'Workouts', value: `${week.completed} / ${week.planned}` },
-              { icon: Dumbbell, color: 'text-green-400', label: 'Sets Completed', value: week.sets.toLocaleString() },
-              { icon: BarChart3, color: 'text-amber-400', label: 'Volume (kg)', value: week.volume.toLocaleString() },
+              { icon: Activity, color: 'text-accent', label: 'Workouts', value: `${week.completed} / ${week.planned}` },
+              { icon: Dumbbell, color: 'text-success', label: 'Sets Completed', value: week.sets.toLocaleString() },
+              { icon: BarChart3, color: 'text-warning', label: 'Volume (kg)', value: week.volume.toLocaleString() },
             ].map(({ icon: Icon, color, label, value }) => (
-              <div key={label} className="flex items-center justify-between rounded-xl bg-slate-900/50 p-3">
-                <div className="flex items-center gap-3 text-slate-400"><Icon className={`h-5 w-5 ${color}`} /><span>{label}</span></div>
-                <span className="font-bold text-slate-200">{value}</span>
+              <div key={label} className="flex items-center justify-between rounded-xl border border-border bg-raised p-3">
+                <div className="flex items-center gap-3 text-text-muted"><Icon className={`h-4 w-4 ${color}`} /><span className="text-sm">{label}</span></div>
+                <span className="font-medium tabular-nums text-text">{value}</span>
               </div>
             ))}
           </div>
@@ -211,42 +220,53 @@ const DashboardPage = () => {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="flex h-96 flex-col lg:col-span-2">
-          <h3 className="mb-6 text-lg font-semibold text-slate-100">Volume Progress</h3>
+          <h3 className="mb-6 text-lg font-medium text-text">Volume Progress</h3>
           {hasVolume ? (
             <div className="min-h-[250px] w-full flex-1">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={weeklyVolume} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.3} /><stop offset="95%" stopColor="#6366F1" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.22} />
+                      <stop offset="95%" stopColor="var(--accent)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" vertical={false} />
-                  <XAxis dataKey="week" stroke="#64748B" tick={{ fill: '#64748B', fontSize: 12 }} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#64748B" tick={{ fill: '#64748B', fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)} />
-                  <Tooltip contentStyle={{ backgroundColor: '#0F172A', borderColor: '#1E293B', borderRadius: '0.5rem', color: '#F1F5F9' }} itemStyle={{ color: '#818CF8' }} formatter={(v) => [`${v.toLocaleString()} kg`, 'Volume']} labelFormatter={(l) => `Week of ${l}`} />
-                  <Area type="monotone" dataKey="volume" stroke="#6366F1" strokeWidth={3} fillOpacity={1} fill="url(#colorVolume)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="week" stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-muted)" tick={{ fill: 'var(--text-muted)', fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : v)} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border)', borderRadius: '0.75rem', color: 'var(--text)' }}
+                    itemStyle={{ color: 'var(--accent)' }}
+                    formatter={(v) => [`${v.toLocaleString()} kg`, 'Volume']}
+                    labelFormatter={(l) => `Week of ${l}`}
+                  />
+                  <Area type="monotone" dataKey="volume" stroke="var(--accent)" strokeWidth={1.75} fillOpacity={1} fill="url(#colorVolume)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="flex flex-1 items-center justify-center text-center text-sm text-slate-500">Complete your first workout to see your volume trend.</div>
+            <div className="flex flex-1 items-center justify-center text-center text-sm text-text-muted">
+              Complete your first workout to see your volume trend.
+            </div>
           )}
         </Card>
 
         <Card>
-          <h3 className="mb-6 text-lg font-semibold text-slate-100">Weekly Heatmap</h3>
+          <h3 className="mb-6 text-lg font-medium text-text">Weekly Heatmap</h3>
           <div className="mb-6 grid grid-cols-7 gap-2">
             {heatmap.map((d) => (
               <div key={d.day} className="flex flex-col items-center gap-2">
-                <div className={`h-8 w-8 rounded-md ${HEAT[d.level] || HEAT[0]} cursor-default ring-offset-2 ring-offset-slate-900 transition-colors duration-300 hover:ring-2 hover:ring-indigo-400`} title={`${d.day}: ${d.volume.toLocaleString()} kg`} />
-                <span className="text-xs text-slate-500">{d.day}</span>
+                <div
+                  className={`h-8 w-8 rounded-md border border-border ${HEAT[d.level] || HEAT[0]} cursor-default transition-colors duration-200 hover:border-accent`}
+                  title={`${d.day}: ${d.volume.toLocaleString()} kg`}
+                />
+                <span className="text-xs text-text-muted">{d.day}</span>
               </div>
             ))}
           </div>
-          <div className="flex items-center justify-between border-t border-slate-800 pt-6 text-xs text-slate-400">
+          <div className="flex items-center justify-between border-t border-border pt-6 text-xs text-text-muted">
             <span>Less</span>
-            <div className="flex gap-1">{HEAT.map((c) => <div key={c} className={`h-3 w-3 rounded-sm ${c}`} />)}</div>
+            <div className="flex gap-1">{HEAT.map((c) => <div key={c} className={`h-3 w-3 rounded-sm border border-border ${c}`} />)}</div>
             <span>More</span>
           </div>
         </Card>
@@ -254,11 +274,11 @@ const DashboardPage = () => {
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <h3 className="mb-4 text-lg font-semibold text-slate-100">Monthly Volume</h3>
+          <h3 className="mb-4 text-lg font-medium text-text">Monthly Volume</h3>
           <MonthlyVolumeChart data={monthly} />
         </Card>
         <Card>
-          <h3 className="mb-4 text-lg font-semibold text-slate-100">Muscle Recovery</h3>
+          <h3 className="mb-4 text-lg font-medium text-text">Muscle Recovery</h3>
           <MuscleBodyMap recovery={recovery} />
         </Card>
       </div>

@@ -142,7 +142,7 @@ const ProfilePage = () => {
 
       <div className="max-w-4xl space-y-6">
         <Card className="flex flex-wrap items-center gap-6">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-500/30 to-purple-500/20 text-3xl font-bold text-indigo-300">
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-raised font-display text-3xl font-medium text-accent">
             {(user?.first_name || user?.email || 'U').charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
@@ -172,10 +172,10 @@ const ProfilePage = () => {
         <section aria-label="Training stats">
           <h3 className="mb-3 text-lg font-semibold text-slate-100">Training stats</h3>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <Stat icon={Dumbbell} label="Workouts done" value={stats?.workouts ?? 0} />
-            <Stat icon={BarChart3} label="Total volume" value={`${(stats?.volume ?? 0).toLocaleString()} kg`} sub={`${stats?.sets ?? 0} working sets`} color="text-amber-400" />
-            <Stat icon={Clock} label="Avg. duration" value={stats?.avg_minutes != null ? `${stats.avg_minutes} min` : '—'} color="text-cyan-400" />
-            <Stat icon={Flame} label="Week streak" value={stats?.streak_weeks ?? 0} sub="consecutive weeks" color="text-orange-400" />
+            <Stat icon={Dumbbell} label="Workouts done" value={stats?.workouts ?? 0} color="text-accent" />
+            <Stat icon={BarChart3} label="Total volume" value={`${(stats?.volume ?? 0).toLocaleString()} kg`} sub={`${stats?.sets ?? 0} working sets`} color="text-warning" />
+            <Stat icon={Clock} label="Avg. duration" value={stats?.avg_minutes != null ? `${stats.avg_minutes} min` : '—'} color="text-ai" />
+            <Stat icon={Flame} label="Week streak" value={stats?.streak_weeks ?? 0} sub="consecutive weeks" color="text-success" />
           </div>
           {(stats?.top_lifts?.length > 0 || stats?.favourite_muscle) && (
             <Card className="mt-4">

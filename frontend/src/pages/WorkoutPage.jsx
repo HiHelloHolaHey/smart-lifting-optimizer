@@ -21,19 +21,23 @@ import { groupExercises, hasValue, useNow } from '../utils/workoutSets';
 const REST_SECONDS = { working: 120, warmup: 60 };
 const NOTE_AUTOSAVE_MS = 800;
 
+/** Principle: Use the AI blue (--ai) on its soft tint (--ai-tint) for coach insights. */
 const OverloadChip = ({ exerciseId }) => {
   const { suggestion, loading } = useProgressOverload(exerciseId);
   if (loading || !suggestion || suggestion.suggested_weight_kg === undefined) return null;
   return (
-    <div className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-300" title={suggestion.increment_reason}>
+    <div
+      className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-ai/25 bg-ai-tint px-2.5 py-1 text-xs font-medium text-ai"
+      title={suggestion.increment_reason}
+    >
       <TrendingUp className="h-3.5 w-3.5" />
       Suggested: {suggestion.suggested_weight_kg}kg × {suggestion.suggested_reps}
-      {suggestion.source === 'ai' && <Sparkles className="h-3 w-3 text-cyan-300" aria-label="AI-adjusted" />}
+      {suggestion.source === 'ai' && <Sparkles className="h-3 w-3 text-ai" aria-label="AI-adjusted" />}
     </div>
   );
 };
 
-/** 2-sentence AI coaching brief; cached per workout so refreshes don't re-bill the LLM. */
+/** 2-sentence AI coaching brief on --ai-tint (#1F2633) with --ai (#8FA1C4) label/icon. */
 const CoachBrief = ({ workoutId }) => {
   const [brief, setBrief] = usePersistentState(`brief-${workoutId}`, null);
   const [loading, setLoading] = useState(!brief);
@@ -50,14 +54,17 @@ const CoachBrief = ({ workoutId }) => {
 
   if (!loading && !brief) return null;
   return (
-    <div className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-400/10 to-indigo-500/10 p-4">
-      <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-cyan-300">
+    <div className="rounded-2xl border border-ai/25 bg-ai-tint p-4">
+      <div className="mb-1.5 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ai">
         <Sparkles className="h-4 w-4" />{brief?.source === 'ai' ? 'AI Coach' : 'Coach'}
       </div>
       {loading ? (
-        <div className="space-y-2" aria-busy="true"><div className="h-3 w-full animate-pulse rounded bg-slate-700/60" /><div className="h-3 w-2/3 animate-pulse rounded bg-slate-700/60" /></div>
+        <div className="space-y-2" aria-busy="true">
+          <div className="h-3 w-full animate-pulse rounded bg-raised" />
+          <div className="h-3 w-2/3 animate-pulse rounded bg-raised" />
+        </div>
       ) : (
-        <p className="text-sm leading-relaxed text-slate-200">{brief.text}</p>
+        <p className="text-sm leading-relaxed text-text">{brief.text}</p>
       )}
     </div>
   );
@@ -71,18 +78,17 @@ const WorkoutPage = () => {
   const [workout, setWorkout] = useState(null);
   const [catalog, setCatalog] = useState([]);
   const [loadError, setLoadError] = useState('');
-  const [error, setError] = useState(null); // { text, activeId? }
+  const [error, setError] = useState(null);
   const [toast, setToast] = useState('');
   const [finished, setFinished] = useState(false);
   const [busy, setBusy] = useState(false);
   const [swapTarget, setSwapTarget] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState(null);
-  const [dialog, setDialog] = useState(null); // 'exit' | 'discard' | 'finish'
+  const [dialog, setDialog] = useState(null);
   const [noteStatus, setNoteStatus] = useState({});
   const noteTimers = useRef({});
 
-  // Everything typed lives in a localStorage-backed draft, so an accidental refresh loses nothing.
   const [draft, setDraft, clearDraft] = usePersistentState(`workout-draft-${id}`, { inputs: {}, notes: {}, rest: null });
 
   const load = useCallback(async () => {
@@ -117,7 +123,6 @@ const WorkoutPage = () => {
   const exercises = useMemo(() => groupExercises(workout?.sets), [workout?.sets]);
   const workoutExerciseIds = useMemo(() => exercises.map((e) => e.exercise_id), [exercises]);
 
-  /** Pre-fill: logged value if done, else the planned weight, else last time's numbers. */
   const valuesFor = (set) => {
     if (draft.inputs[set.id]) return draft.inputs[set.id];
     const prev = prevFor(set);
@@ -282,110 +287,172 @@ const WorkoutPage = () => {
   const goBack = () => (isActive ? setDialog('exit') : navigate(isDone ? '/profile#history' : '/workouts'));
   const requestFinish = () => (stats.done < stats.total ? setDialog('finish') : finish());
 
-  if (loadError) return <div className="p-10 text-center text-slate-400">{loadError}</div>;
+  if (loadError) return <div className="p-10 text-center text-text-muted">{loadError}</div>;
   if (!workout) return <LoadingSpinner />;
 
   const elapsed = isActive && workout.started_at ? (now - new Date(workout.started_at).getTime()) / 1000 : 0;
+  const progressPct = stats.total > 0 ? Math.min(100, Math.round((stats.done / stats.total) * 100)) : 0;
 
   return (
-    <div className="relative min-h-screen bg-slate-950 pb-24 text-slate-100">
+    <div className="relative min-h-screen bg-bg pb-24 text-text">
       {finished && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg/90 backdrop-blur-sm">
           <div className="space-y-3 text-center">
-            <div className="animate-bounce text-6xl">🎉</div>
-            <h2 className="bg-gradient-to-r from-cyan-300 to-indigo-400 bg-clip-text text-3xl font-bold text-transparent">Workout Complete!</h2>
-            <p className="text-slate-400">{stats.done} sets · {stats.volume.toLocaleString()} kg volume · {formatClock(elapsed)}</p>
+            <div className="animate-bounce text-5xl">🎉</div>
+            <h2 className="text-3xl font-medium text-accent">Workout Complete</h2>
+            <p className="text-text-muted">{stats.done} sets · {stats.volume.toLocaleString()} kg volume · {formatClock(elapsed)}</p>
           </div>
         </div>
       )}
 
-      <header className="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/85 p-4 backdrop-blur-md lg:px-8">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+      <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 p-4 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <button type="button" aria-label="Back" onClick={goBack} className="-ml-2 rounded-lg p-2 text-slate-400 hover:text-slate-100"><ArrowLeft className="h-6 w-6" /></button>
+            <button type="button" aria-label="Back" onClick={goBack} className="-ml-2 rounded-lg p-2 text-text-muted hover:text-text">
+              <ArrowLeft className="h-5 w-5" />
+            </button>
             <div className="min-w-0">
-              <h1 className="truncate text-lg font-bold">{workoutName(workout)}</h1>
-              <p className="text-xs text-slate-400">{new Date(workout.scheduled_date).toLocaleDateString()} · {stats.done}/{stats.total} sets · {stats.volume.toLocaleString()} kg</p>
+              <h1 className="truncate text-lg font-medium">{workoutName(workout)}</h1>
+              <p className="text-xs text-text-muted">
+                {new Date(workout.scheduled_date).toLocaleDateString()} · {stats.done}/{stats.total} sets · {stats.volume.toLocaleString()} kg
+              </p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {isActive && (
               <>
-                <span className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 font-mono text-sm font-bold text-emerald-300" aria-label="Elapsed time"><Timer className="h-4 w-4" />{formatClock(elapsed)}</span>
-                <button type="button" onClick={() => setDialog('discard')} className="rounded-lg border border-red-500/30 px-2.5 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/10">Discard</button>
+                <span className="flex items-center gap-1.5 rounded-lg border border-success/35 bg-success/15 px-2.5 py-1.5 font-mono text-sm font-medium tabular-nums text-success" aria-label="Elapsed time">
+                  <Timer className="h-4 w-4" />{formatClock(elapsed)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setDialog('discard')}
+                  className="rounded-lg border border-danger/40 px-2.5 py-1.5 text-xs font-medium text-danger hover:bg-danger/15"
+                >
+                  Discard
+                </button>
               </>
             )}
             {!isActive && <Badge variant={isDone ? 'success' : 'info'}>{isDone ? 'completed' : 'planning'}</Badge>}
           </div>
         </div>
+        {/* Thin progress line per theme guide */}
+        <div className="h-0.5 w-full bg-raised">
+          <div className="h-full bg-accent transition-all duration-300" style={{ width: `${progressPct}%` }} />
+        </div>
       </header>
 
       <main className="mx-auto max-w-3xl space-y-5 p-4 lg:p-8">
         {status === 'scheduled' && (
-          <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 p-4 sm:flex-row sm:items-center">
+          <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-border bg-surface p-4 sm:flex-row sm:items-center">
             <div>
-              <div className="font-semibold text-slate-100">You're planning this session</div>
-              <p className="text-sm text-slate-400">Adjust exercises and numbers now. Press <b>Start Now</b> when you're at the gym to start the clock and log sets.</p>
+              <div className="font-medium text-text">You're planning this session</div>
+              <p className="text-sm text-text-muted">
+                Adjust exercises and numbers now. Press <b>Start Now</b> when you're at the gym to start the clock and log sets.
+              </p>
             </div>
-            <Button onClick={startNow} loading={busy} className="w-full shadow-[0_0_20px_rgba(99,102,241,0.3)] sm:w-auto"><Play className="mr-2 h-4 w-4" />Start Now</Button>
+            <Button onClick={startNow} loading={busy} className="w-full sm:w-auto">
+              <Play className="mr-2 h-4 w-4" />Start Now
+            </Button>
           </div>
         )}
 
         {!isDone && <CoachBrief workoutId={id} />}
 
         {error && (
-          <div role="alert" className="flex items-start justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          <div role="alert" className="flex items-start justify-between gap-3 rounded-xl border border-danger/40 bg-danger/15 px-4 py-3 text-sm text-danger">
             <span>
               {error.text}
-              {error.activeId && <button type="button" onClick={() => navigate(`/workout/${error.activeId}`)} className="ml-2 font-semibold underline">Go to it</button>}
+              {error.activeId && (
+                <button type="button" onClick={() => navigate(`/workout/${error.activeId}`)} className="ml-2 font-medium underline">
+                  Go to it
+                </button>
+              )}
             </span>
-            <button type="button" aria-label="Dismiss" onClick={() => setError(null)}><X className="h-4 w-4" /></button>
+            <button type="button" aria-label="Dismiss" onClick={() => setError(null)}>
+              <X className="h-4 w-4" />
+            </button>
           </div>
         )}
-        {toast && <div role="status" className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{toast}</div>}
+        {toast && <div role="status" className="rounded-xl border border-success/40 bg-success/15 px-4 py-3 text-sm text-success">{toast}</div>}
 
         {exercises.map((ex) => (
-          <Card key={ex.exercise_id} className="overflow-hidden !p-0 border-slate-800">
-            <div className="flex items-start justify-between border-b border-slate-800 bg-slate-900/40 p-5">
+          <Card key={ex.exercise_id} className="overflow-hidden !p-0">
+            <div className="flex items-start justify-between border-b border-border bg-surface p-5">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-lg font-bold">{ex.exercise_name}</h3>
+                  <h3 className="text-lg font-medium text-text">{ex.exercise_name}</h3>
                   <Badge variant="default">{ex.muscle_group}</Badge>
                 </div>
                 <OverloadChip exerciseId={ex.exercise_id} />
               </div>
               {!isDone && (
                 <div className="flex gap-1">
-                  <button type="button" onClick={() => setSwapTarget(ex)} aria-label={`Swap ${ex.exercise_name}`} title="Swap exercise" className="rounded-lg p-2 text-slate-400 transition-all hover:bg-indigo-500/10 hover:text-indigo-300"><ArrowLeftRight className="h-5 w-5" /></button>
-                  <button type="button" onClick={() => setRemoveTarget(ex)} aria-label={`Remove ${ex.exercise_name}`} title="Remove exercise" className="rounded-lg p-2 text-slate-400 transition-all hover:bg-red-500/10 hover:text-red-400"><Trash2 className="h-5 w-5" /></button>
+                  <button
+                    type="button"
+                    onClick={() => setSwapTarget(ex)}
+                    aria-label={`Swap ${ex.exercise_name}`}
+                    title="Swap exercise"
+                    className="rounded-lg p-2 text-text-muted transition-all hover:bg-raised hover:text-accent"
+                  >
+                    <ArrowLeftRight className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRemoveTarget(ex)}
+                    aria-label={`Remove ${ex.exercise_name}`}
+                    title="Remove exercise"
+                    className="rounded-lg p-2 text-text-muted transition-all hover:bg-danger/15 hover:text-danger"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
                 </div>
               )}
             </div>
 
             <ExerciseNotes
-              value={notesFor(ex)} status={noteStatus[ex.exercise_id]}
+              value={notesFor(ex)}
+              status={noteStatus[ex.exercise_id]}
               onChange={(text) => changeNotes(ex, text)}
               onSave={() => saveNotes(ex, notesFor(ex))}
             />
 
             <div className="p-3">
-              <div className="grid grid-cols-[2rem_1fr_4.5rem_4.5rem_2.75rem] gap-2 px-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                <span className="text-center">Set</span><span>Previous</span><span className="text-center">kg</span><span className="text-center">Reps</span><span />
+              <div className="grid grid-cols-[2rem_1fr_4.5rem_4.5rem_2.75rem] gap-2 px-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-text-muted">
+                <span className="text-center">Set</span>
+                <span>Previous</span>
+                <span className="text-center">kg</span>
+                <span className="text-center">Reps</span>
+                <span />
               </div>
               {ex.sets.map((set) => (
                 <React.Fragment key={set.id}>
                   <SetRow
-                    set={set} locked={isDone}
+                    set={set}
+                    locked={isDone}
                     label={set.set_type === 'warmup' ? 'W' : set.set_number}
-                    previous={prevFor(set)} values={valuesFor(set)} placeholders={placeholdersFor(set)}
+                    previous={prevFor(set)}
+                    values={valuesFor(set)}
+                    placeholders={placeholdersFor(set)}
                     canLog={isActive}
                     onChange={(field, value) => handleInput(set, field, value)}
                     onToggle={() => handleToggle(set)}
                   />
                   {draft.rest?.setId === set.id && set.completed && (
                     <RestTimer
-                      key={draft.rest.endsAt} endsAt={draft.rest.endsAt} total={draft.rest.total}
-                      onAdjust={(delta) => setDraft((d) => ({ ...d, rest: { ...d.rest, endsAt: d.rest.endsAt + delta * 1000, total: Math.max(d.rest.total, Math.ceil((d.rest.endsAt + delta * 1000 - Date.now()) / 1000)) } }))}
+                      key={draft.rest.endsAt}
+                      endsAt={draft.rest.endsAt}
+                      total={draft.rest.total}
+                      onAdjust={(delta) =>
+                        setDraft((d) => ({
+                          ...d,
+                          rest: {
+                            ...d.rest,
+                            endsAt: d.rest.endsAt + delta * 1000,
+                            total: Math.max(d.rest.total, Math.ceil((d.rest.endsAt + delta * 1000 - Date.now()) / 1000)),
+                          },
+                        }))
+                      }
                       onDone={() => setDraft((d) => ({ ...d, rest: null }))}
                     />
                   )}
@@ -393,8 +460,20 @@ const WorkoutPage = () => {
               ))}
               {!isDone && (
                 <div className="mt-2 flex gap-2 px-2">
-                  <button type="button" onClick={() => addSet(ex, 'working')} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-slate-100"><Plus className="h-3.5 w-3.5" />Set</button>
-                  <button type="button" onClick={() => addSet(ex, 'warmup')} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-amber-400/80 hover:bg-amber-500/10"><Flame className="h-3.5 w-3.5" />Warm-up</button>
+                  <button
+                    type="button"
+                    onClick={() => addSet(ex, 'working')}
+                    className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-text-muted hover:bg-raised hover:text-text"
+                  >
+                    <Plus className="h-3.5 w-3.5" />Set
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => addSet(ex, 'warmup')}
+                    className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-warning hover:bg-warning/15"
+                  >
+                    <Flame className="h-3.5 w-3.5" />Warm-up
+                  </button>
                 </div>
               )}
             </div>
@@ -402,28 +481,47 @@ const WorkoutPage = () => {
         ))}
 
         {!isDone && (
-          <button type="button" onClick={() => setAddOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-700 py-4 text-sm font-medium text-slate-400 transition-colors hover:border-indigo-500/50 hover:text-indigo-300">
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border py-4 text-sm font-medium text-text-muted transition-colors hover:border-accent/60 hover:text-accent"
+          >
             <Plus className="h-4 w-4" /> Add exercise
           </button>
         )}
 
         {isActive && (
           <div className="flex justify-center pt-4">
-            <Button size="lg" onClick={requestFinish} loading={busy} className="w-full shadow-[0_0_20px_rgba(99,102,241,0.25)] md:w-auto">Finish Workout</Button>
+            <Button size="lg" onClick={requestFinish} loading={busy} className="w-full md:w-auto">
+              Finish Workout
+            </Button>
           </div>
         )}
       </main>
 
-      <SwapModal isOpen={Boolean(swapTarget)} onClose={() => setSwapTarget(null)} exercise={swapTarget} catalog={catalog} workoutExerciseIds={workoutExerciseIds} onSelect={handleSwap} />
+      <SwapModal
+        isOpen={Boolean(swapTarget)}
+        onClose={() => setSwapTarget(null)}
+        exercise={swapTarget}
+        catalog={catalog}
+        workoutExerciseIds={workoutExerciseIds}
+        onSelect={handleSwap}
+      />
 
       <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} title="Add exercise">
         <ExercisePicker catalog={catalog} excludeIds={workoutExerciseIds} actionLabel="Add" onPick={handleAddExercise} />
       </Modal>
 
       <ConfirmDialog
-        isOpen={Boolean(removeTarget)} tone="danger" onClose={() => setRemoveTarget(null)}
+        isOpen={Boolean(removeTarget)}
+        tone="danger"
+        onClose={() => setRemoveTarget(null)}
         title={`Remove ${removeTarget?.exercise_name}?`}
-        message={removeTarget?.sets.some((s) => s.completed) ? 'Sets you already logged for this exercise will be deleted too.' : 'All planned sets for this exercise will be removed from this workout.'}
+        message={
+          removeTarget?.sets.some((s) => s.completed)
+            ? 'Sets you already logged for this exercise will be deleted too.'
+            : 'All planned sets for this exercise will be removed from this workout.'
+        }
         actions={[
           { label: 'Remove exercise', variant: 'danger', onClick: handleRemoveExercise },
           { label: 'Cancel', variant: 'ghost', onClick: () => setRemoveTarget(null) },
@@ -431,7 +529,8 @@ const WorkoutPage = () => {
       />
 
       <ConfirmDialog
-        isOpen={dialog === 'exit'} onClose={() => setDialog(null)}
+        isOpen={dialog === 'exit'}
+        onClose={() => setDialog(null)}
         title="Leave this workout?"
         message="Your workout is still running. What would you like to do?"
         actions={[
@@ -443,7 +542,9 @@ const WorkoutPage = () => {
       />
 
       <ConfirmDialog
-        isOpen={dialog === 'discard'} tone="danger" onClose={() => setDialog(null)}
+        isOpen={dialog === 'discard'}
+        tone="danger"
+        onClose={() => setDialog(null)}
         title="Discard this workout?"
         message="All sets you've logged in this session will be cleared and the timer reset. The workout goes back to your schedule."
         actions={[
@@ -453,7 +554,8 @@ const WorkoutPage = () => {
       />
 
       <ConfirmDialog
-        isOpen={dialog === 'finish'} onClose={() => setDialog(null)}
+        isOpen={dialog === 'finish'}
+        onClose={() => setDialog(null)}
         title="Finish with sets remaining?"
         message={`${stats.total - stats.done} set${stats.total - stats.done === 1 ? '' : 's'} not logged yet. You can still finish and save what you've done.`}
         actions={[

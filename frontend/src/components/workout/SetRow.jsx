@@ -10,18 +10,18 @@ import { Check, Lock } from 'lucide-react';
 const SetRow = ({ set, label, previous, values, placeholders, canLog, locked = false, onChange, onToggle }) => {
   const done = set.completed;
   const isWarmup = set.set_type === 'warmup';
-  const inputCls = `w-full rounded-lg border bg-slate-900/80 px-2 py-2 text-center text-sm font-semibold tabular-nums focus:outline-none focus:ring-1 focus:ring-indigo-500/60 disabled:cursor-not-allowed ${
-    done ? 'border-emerald-500/30 text-emerald-200 opacity-80' : 'border-slate-700 text-slate-100 focus:border-indigo-500'
+  const inputCls = `w-full rounded-lg border bg-raised px-2 py-2 text-center text-sm font-medium tabular-nums focus:outline-none focus:ring-1 focus:ring-accent/50 disabled:cursor-not-allowed ${
+    done ? 'border-success/40 text-success opacity-85' : 'border-border text-text focus:border-accent'
   }`;
   const selectAll = (e) => e.target.select();
 
   return (
-    <div className={`grid grid-cols-[2rem_1fr_4.5rem_4.5rem_2.75rem] items-center gap-2 rounded-xl px-2 py-1.5 transition-colors ${done ? 'bg-emerald-500/5' : ''}`}>
-      <span className={`text-center text-sm font-bold ${isWarmup ? 'text-amber-400' : 'text-slate-400'}`} title={isWarmup ? 'Warm-up set' : `Set ${label}`}>
+    <div className={`grid grid-cols-[2rem_1fr_4.5rem_4.5rem_2.75rem] items-center gap-2 rounded-xl px-2 py-1.5 transition-colors ${done ? 'bg-success/10' : ''}`}>
+      <span className={`text-center text-sm font-medium ${isWarmup ? 'text-warning' : 'text-text-muted'}`} title={isWarmup ? 'Warm-up set' : `Set ${label}`}>
         {label}
       </span>
-      <span className="truncate text-xs italic text-slate-500" title="Your previous performance for this set">
-        {previous ? `${Number(previous.weight_kg)} kg x ${previous.reps}` : '—'}
+      <span className="truncate text-xs italic text-text-muted" title="Your previous performance for this set">
+        {previous ? `${Number(previous.weight_kg)} kg × ${previous.reps}` : '—'}
       </span>
       <input
         type="number" inputMode="decimal" step="0.5" min="0" aria-label={`Weight for set ${label}`}
@@ -38,15 +38,15 @@ const SetRow = ({ set, label, previous, values, placeholders, canLog, locked = f
         aria-label={canLog ? `Mark set ${label} ${done ? 'incomplete' : 'complete'}` : 'Start the workout to log sets'}
         title={canLog ? undefined : 'Press "Start Now" to begin logging'}
         onClick={onToggle}
-        className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all active:scale-90 disabled:cursor-not-allowed ${
+        className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all active:scale-95 disabled:cursor-not-allowed ${
           done
-            ? 'border-emerald-400 bg-emerald-500 text-slate-950 shadow-[0_0_12px_rgba(52,211,153,0.5)]'
+            ? 'border-success bg-success text-on-accent'
             : canLog
-              ? 'border-slate-600 bg-slate-800 text-transparent hover:border-emerald-400/60'
-              : 'border-slate-800 bg-slate-900 text-slate-700'
+              ? 'border-border bg-raised text-transparent hover:border-success/60'
+              : 'border-border bg-surface text-text-muted/50'
         }`}
       >
-        {!canLog && !done ? <Lock className="h-4 w-4" /> : <Check className="h-5 w-5" strokeWidth={3} />}
+        {!canLog && !done ? <Lock className="h-4 w-4" /> : <Check className="h-5 w-5" strokeWidth={2.5} />}
       </button>
     </div>
   );

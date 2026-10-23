@@ -20,7 +20,7 @@ const ExercisePicker = ({ catalog, excludeIds = [], initialGroup = 'all', onPick
       </div>
       <div className="mb-3 flex flex-wrap gap-1.5">
         {groups.map((g) => (
-          <button key={g} type="button" onClick={() => setGroup(g)} className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${group === g ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}>{g}</button>
+          <button key={g} type="button" onClick={() => setGroup(g)} className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${group === g ? 'bg-accent text-on-accent' : 'bg-raised text-text-muted hover:text-text'}`}>{g}</button>
         ))}
       </div>
       <ul className="max-h-72 space-y-1 overflow-y-auto pr-1">

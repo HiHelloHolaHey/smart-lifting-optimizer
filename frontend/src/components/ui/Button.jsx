@@ -10,12 +10,13 @@ export const Button = ({
   className = '',
   ...props
 }) => {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 active:scale-95 disabled:opacity-70 disabled:pointer-events-none';
-  
+  const baseStyles =
+    'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 active:scale-[0.99] disabled:opacity-60 disabled:pointer-events-none';
+
   const variants = {
-    primary: 'bg-electric-indigo hover:bg-indigo-500 text-white',
-    ghost: 'bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 text-slate-300',
-    danger: 'bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-400',
+    primary: 'bg-accent text-on-accent hover:opacity-90',
+    ghost: 'bg-raised hover:border-accent/60 border border-border text-text',
+    danger: 'bg-danger/15 hover:bg-danger/25 border border-danger/40 text-danger',
   };
 
   const sizes = {

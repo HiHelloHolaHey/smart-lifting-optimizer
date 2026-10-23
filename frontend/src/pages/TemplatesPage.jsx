@@ -239,7 +239,7 @@ const TemplatesPage = () => {
         </div>
       )}
 
-      <form onSubmit={generate} className="mb-6 flex flex-col gap-2 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-3 sm:flex-row">
+      <form onSubmit={generate} className="mb-6 flex flex-col gap-2 rounded-2xl border border-ai/25 bg-ai-tint p-3 sm:flex-row">
         <input
           className="input-field flex-1"
           maxLength={500}
@@ -267,7 +267,7 @@ const TemplatesPage = () => {
                 type="button"
                 onClick={() => setGroup(g)}
                 className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition-colors ${
-                  group === g ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                  group === g ? 'bg-accent text-on-accent' : 'bg-raised text-text-muted hover:text-text'
                 }`}
               >
                 {g}
