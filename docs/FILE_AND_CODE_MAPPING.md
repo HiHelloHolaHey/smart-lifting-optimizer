@@ -200,7 +200,19 @@ smart-lifting-optimizer/
 
 | File | Exported Symbol | Description |
 |---|---|---|
-| `src/utils/labels.js` | `SPLIT_NAMES`, `GOAL_LABELS`, `LEVEL_LABELS` | Human-readable display maps for split codes (`PPL_PUSH` → `"Push (Chest, Shoulders, Triceps)"`), goals, and experience levels |
+| `src/utils/cn.js` | `cn(...inputs)` | Standard `shadcn/ui` class name merger (`clsx` + `tailwind-merge`) |
+| `src/components/ui/Button.jsx` | `Button`, `buttonVariants` | `shadcn/ui` Button built with `class-variance-authority` and `@radix-ui/react-slot` |
+| `src/components/ui/Badge.jsx` | `Badge`, `badgeVariants` | `shadcn/ui` Badge with automatic status dot indicator |
+| `src/components/ui/Card.jsx` | `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter` | `shadcn/ui` Card family styled with `--surface` and `--border` |
+| `src/components/ui/Input.jsx` | `Input` | `shadcn/ui` Input primitive with error state support |
+| `src/components/ui/Label.jsx` | `Label` | `shadcn/ui` Label primitive |
+| `src/components/ui/Modal.jsx` | `Modal` | `shadcn/ui` Dialog built on `@radix-ui/react-dialog` |
+| `src/components/ui/ConfirmDialog.jsx` | `ConfirmDialog` | `shadcn/ui` AlertDialog built on `@radix-ui/react-alert-dialog` |
+| `src/components/ui/Tabs.jsx` | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `shadcn/ui` Tabs built on `@radix-ui/react-tabs` |
+| `src/components/ui/Tooltip.jsx` | `TooltipProvider`, `Tooltip`, `TooltipTrigger`, `TooltipContent` | `shadcn/ui` Tooltip built on `@radix-ui/react-tooltip` |
+| `src/components/ui/Progress.jsx` | `Progress` | `shadcn/ui` Progress bar built on `@radix-ui/react-progress` |
+| `src/components/ui/TimeInput.jsx` | `TimeInput` | `shadcn/ui` Popover-backed (`@radix-ui/react-popover`) 24h time selector |
+| `src/utils/labels.js` | `SPLIT_NAMES`, `GOAL_LABELS`, `LEVEL_LABELS` | Human-readable display maps for split codes (`PPL_PUSH` → `"Push Day"`), goals, and experience levels |
 | `src/utils/labels.js` | `workoutName(workout)` | Returns `workout.name` (if created from a custom template) or `SPLIT_NAMES[workout.split_type]` |
 | `src/utils/labels.js` | `formatClock(seconds)` | Formats elapsed/rest seconds as `MM:SS` or `H:MM:SS` |
 | `src/utils/labels.js` | `formatDuration(startedAt, endedAt)` | Returns human-readable duration (e.g. `"42 min"`) between two ISO timestamps |

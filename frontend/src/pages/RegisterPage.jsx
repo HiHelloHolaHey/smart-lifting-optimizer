@@ -4,6 +4,8 @@ import { Dumbbell, Eye, EyeOff, CheckCircle2, Circle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Label } from '../components/ui/Label';
 
 const NETWORK_ERROR = "Can't reach the server. Check your connection and try again.";
 
@@ -58,63 +60,72 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
-      {/* Left Panel */}
-      <div className="hidden lg:flex w-1/2 flex-col justify-center items-center bg-gradient-radial from-slate-900 to-slate-950 border-r border-slate-800">
-        <div className="text-center">
-          <div className="bg-electric-indigo/10 p-4 rounded-2xl inline-block mb-6 border border-electric-indigo/20">
-            <Dumbbell className="w-16 h-16 text-electric-indigo" />
+    <div className="min-h-screen bg-bg text-text flex">
+      {/* Left Branding Panel */}
+      <div className="hidden lg:flex w-1/2 flex-col justify-center items-center bg-surface border-r border-border p-12">
+        <div className="text-center max-w-md">
+          <div className="bg-raised p-4 rounded-2xl inline-block mb-6 border border-border">
+            <Dumbbell className="w-14 h-14 text-accent" />
           </div>
-          <h1 className="text-4xl font-bold text-slate-100 mb-4 tracking-tight">Smart Lifting Optimizer</h1>
-          <p className="text-xl text-slate-400 font-light">Train Smarter. Lift Heavier.</p>
+          <h1 className="text-4xl font-medium text-text mb-3 tracking-tight">Smart Lifting Optimizer</h1>
+          <p className="text-lg text-text-muted">Quiet precision for progressive overload, smart scheduling, and recovery tracking.</p>
         </div>
       </div>
 
-      {/* Right Panel */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-950">
+      {/* Right Form Panel */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 bg-bg">
         <div className="w-full max-w-md">
           <Card className="p-8">
-            <h2 className="text-2xl font-semibold mb-6 text-slate-100">Create Account</h2>
+            <h2 className="text-2xl font-medium mb-6 text-text">Create Account</h2>
             {banner && (
-              <div role="alert" className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-xl mb-6 text-sm">
+              <div role="alert" className="bg-danger/15 border border-danger/40 text-danger p-3 rounded-xl mb-6 text-sm">
                 {banner}
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div>
-                <label htmlFor="reg-email" className="block text-sm font-medium text-slate-400 mb-1.5">Email</label>
-                <input
+                <Label htmlFor="reg-email">Email</Label>
+                <Input
                   id="reg-email"
                   type="email"
                   autoComplete="email"
-                  className={`input-field ${errors.email ? '!border-red-500' : ''}`}
+                  error={!!errors.email}
                   placeholder="name@example.com"
                   value={email}
-                  onChange={(e) => { setEmail(e.target.value); clearField('email'); }}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    clearField('email');
+                  }}
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? 'reg-email-error' : undefined}
                 />
                 {errors.email && (
-                  <p id="reg-email-error" className="text-red-400 text-sm mt-1.5">
+                  <p id="reg-email-error" className="text-danger text-sm mt-1.5">
                     {errors.email}{' '}
                     {errors.code === 'EMAIL_TAKEN' && (
-                      <Link to="/login" className="underline text-electric-indigo hover:text-indigo-400">Sign in instead</Link>
+                      <Link to="/login" className="underline text-accent hover:opacity-80">
+                        Sign in instead
+                      </Link>
                     )}
                   </p>
                 )}
               </div>
 
               <div>
-                <label htmlFor="reg-password" className="block text-sm font-medium text-slate-400 mb-1.5">Password</label>
+                <Label htmlFor="reg-password">Password</Label>
                 <div className="relative">
-                  <input
+                  <Input
                     id="reg-password"
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
-                    className={`input-field pr-12 ${errors.password ? '!border-red-500' : ''}`}
+                    error={!!errors.password}
+                    className="pr-12"
                     placeholder="••••••••"
                     value={password}
-                    onChange={(e) => { setPassword(e.target.value); clearField('password'); }}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      clearField('password');
+                    }}
                     aria-invalid={!!errors.password}
                     aria-describedby={`reg-password-rules${errors.password ? ' reg-password-error' : ''}`}
                   />
@@ -123,17 +134,19 @@ const RegisterPage = () => {
                     onClick={() => setShowPassword((s) => !s)}
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                     aria-pressed={showPassword}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
                 {errors.password && (
-                  <p id="reg-password-error" className="text-red-400 text-sm mt-1.5">{errors.password}</p>
+                  <p id="reg-password-error" className="text-danger text-sm mt-1.5">
+                    {errors.password}
+                  </p>
                 )}
                 <ul id="reg-password-rules" className="mt-2 space-y-1">
                   {rules.map((r) => (
-                    <li key={r.id} className={`flex items-center gap-2 text-sm transition-colors ${r.ok ? 'text-green-400' : 'text-slate-500'}`}>
+                    <li key={r.id} className={`flex items-center gap-2 text-sm transition-colors ${r.ok ? 'text-success' : 'text-text-muted'}`}>
                       {r.ok ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                       <span>{r.label}</span>
                       <span className="sr-only">{r.ok ? '(met)' : '(not met)'}</span>
@@ -143,12 +156,12 @@ const RegisterPage = () => {
               </div>
 
               <div>
-                <label htmlFor="reg-confirm" className="block text-sm font-medium text-slate-400 mb-1.5">Confirm password</label>
-                <input
+                <Label htmlFor="reg-confirm">Confirm password</Label>
+                <Input
                   id="reg-confirm"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  className={`input-field ${mismatch ? '!border-red-500' : ''}`}
+                  error={mismatch}
                   placeholder="••••••••"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
@@ -156,7 +169,9 @@ const RegisterPage = () => {
                   aria-describedby={mismatch ? 'reg-confirm-error' : undefined}
                 />
                 {mismatch && (
-                  <p id="reg-confirm-error" className="text-red-400 text-sm mt-1.5">Passwords don't match</p>
+                  <p id="reg-confirm-error" className="text-danger text-sm mt-1.5">
+                    Passwords don't match
+                  </p>
                 )}
               </div>
 
@@ -164,9 +179,9 @@ const RegisterPage = () => {
                 Create Account
               </Button>
             </form>
-            <p className="mt-6 text-center text-slate-400 text-sm">
+            <p className="mt-6 text-center text-text-muted text-sm">
               Already have an account?{' '}
-              <Link to="/login" className="text-electric-indigo hover:text-indigo-400 transition-colors">
+              <Link to="/login" className="text-accent hover:underline font-medium">
                 Sign in
               </Link>
             </p>

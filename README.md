@@ -20,11 +20,105 @@ A full-stack, AI-assisted strength training application that automates workout s
 
 | Layer | Technology |
 |---|---|
-| **Frontend** | React 18, Vite 5, Tailwind CSS 3 (CSS-variable token system), Recharts, Lucide React, React Router v6 |
+| **Frontend** | React 18, Vite 5, Tailwind CSS 3, **shadcn/ui** (`@radix-ui/*` primitives + `cva` + `tailwind-merge`), Recharts, Lucide React, React Router v6 |
 | **Backend** | Node.js (v18+), Express 4, `pg-promise`, `bcryptjs`, `jsonwebtoken`, `cookie-parser` |
 | **Database** | PostgreSQL (Neon Serverless or local PostgreSQL 14+) |
 | **AI Integration** | Google Gemini API (`gemini-2.0-flash` by default via REST) with deterministic rule-based fallbacks |
+| **Testing & CI** | Jest (Backend Unit), Node Test Runner (Frontend Unit), Custom E2E Runner (`apitest.js`), GitHub Actions CI (`.github/workflows/ci.yml`) |
 | **Typography & Theme** | `Fraunces` (headings) + `DM Sans` (body/tabular data) · Midnight Slate (`#15181D`) & Warm Porcelain (`#F4F2EE`) |
+
+---
+
+## Project Folder Structure
+
+```text
+smart-lifting-optimizer/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                             # GitHub Actions CI (Unit Tests + Vite Build + PostgreSQL 16 E2E Suite)
+├── README.md                                  # Setup guide, folder structure & engineering Do's/Don'ts
+├── docs/
+│   ├── CODE_FLOW.md                           # End-to-end request/response flows & state machines
+│   ├── USER_WORKFLOW.md                       # Step-by-step user guide & QA checklist
+│   ├── FILE_AND_CODE_MAPPING.md               # Complete file, symbol, API & database schema reference
+│   ├── premium-color-theme-guide.md           # Active theme spec (Midnight Slate & Warm Porcelain)
+│   └── original-color-theme-guide.md          # Archived original theme spec (Electric Indigo)
+├── backend/
+│   ├── package.json                           # Backend dependencies & scripts (dev, start, test, test:api)
+│   ├── .env.example                           # Environment variable template
+│   ├── schema.sql                             # Complete PostgreSQL DDL schema
+│   ├── seed.sql                               # 60+ seeded exercises across 9 muscle groups
+│   ├── migrate.js                             # Applies schema.sql + seed.sql
+│   ├── run-migration.js                       # Runs a specific SQL migration file
+│   ├── apitest.js                             # 57-check automated E2E API test suite
+│   ├── migrations/
+│   │   ├── 002_phase2.sql                     # Phase 2 schema additions (set_type, workout_logs, workout_templates)
+│   │   └── 003_workout_lifecycle.sql          # Workout lifecycle columns & uq_one_active_workout_per_user index
+│   ├── tests/
+│   │   ├── authAndMiddleware.test.js          # Jest unit tests for auth validation, JWT & error middleware
+│   │   ├── progressiveOverloadService.test.js # Jest unit tests for overload math & AI bounds
+│   │   ├── schedulingService.test.js          # Jest unit tests for 7-day slot scheduling algorithm
+│   │   └── swapService.test.js                # Jest unit tests for exercise alternative scoring
+│   └── src/
+│       ├── index.js                           # Express app entrypoint & route mounting
+│       ├── config/                            # Environment config (index.js) & pg-promise instance (db.js)
+│       ├── middleware/                        # verifyToken.js & errorHandler.js
+│       ├── models/                            # Database queries (user, exercise, workout, workoutSet, workoutLog, template, schedule, onerm)
+│       ├── services/                          # Business logic (auth, onboarding, scheduling, progressiveOverload, swap, llm)
+│       ├── controllers/                       # Express route handlers (auth, onboarding, schedule, workout, exercise, ai, analytics)
+│       └── routes/                            # Express routers (/api/auth, /onboarding, /schedule, /workouts, /exercises, /ai, /templates, /analytics)
+└── frontend/
+    ├── package.json                           # Frontend dependencies & scripts (dev, build, preview, test)
+    ├── components.json                        # shadcn/ui configuration
+    ├── vite.config.js                         # Vite config with /api proxy -> http://localhost:3001
+    ├── tailwind.config.js                     # CSS-variable color token mappings & font families
+    ├── postcss.config.js                      # Tailwind + Autoprefixer PostCSS setup
+    ├── index.html                             # HTML shell loading Fraunces & DM Sans fonts
+    ├── tests/
+    │   └── utils.test.js                      # Frontend unit tests for labels.js, workoutSets.js & cn.js
+    └── src/
+        ├── main.jsx                           # React root mounting BrowserRouter + App
+        ├── App.jsx                            # Route definitions, ProtectedRoute, PublicRoute & TooltipProvider
+        ├── index.css                          # Dark/Light CSS variables + base/component classes
+        ├── api/                               # Axios client (client.js) & typed endpoint wrappers (endpoints.js)
+        ├── context/                           # AuthContext.jsx & WorkoutContext.jsx
+        ├── hooks/                             # useCountdown.js, usePersistentState.js, useProgressOverload.js
+        ├── utils/                             # cn.js (shadcn class merger), labels.js, workoutSets.js
+        ├── components/
+        │   ├── layout/
+        │   │   └── AppLayout.jsx              # Persistent desktop sidebar + mobile bottom nav + theme toggle
+        │   ├── ui/                            # shadcn/ui & Radix UI primitives
+        │   │   ├── Badge.jsx                  # cva Badge with status dot indicator
+        │   │   ├── Button.jsx                 # cva + Radix Slot Button
+        │   │   ├── Card.jsx                   # Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter
+        │   │   ├── ConfirmDialog.jsx          # Radix AlertDialog modal
+        │   │   ├── Input.jsx                  # Standardized input control
+        │   │   ├── Label.jsx                  # Standardized form label
+        │   │   ├── LoadingSpinner.jsx         # Full-screen loading state
+        │   │   ├── Modal.jsx                  # Radix Dialog modal
+        │   │   ├── Progress.jsx               # Radix Progress thin indicator bar
+        │   │   ├── Tabs.jsx                   # Radix Tabs (Tabs, TabsList, TabsTrigger, TabsContent)
+        │   │   ├── TimeInput.jsx              # Radix Popover 24h time picker + numeric inputs
+        │   │   └── Tooltip.jsx                # Radix Tooltip (TooltipProvider, Tooltip, TooltipTrigger, TooltipContent)
+        │   ├── dashboard/
+        │   │   ├── MonthlyVolumeChart.jsx     # Recharts BarChart for 30-day weekly volume
+        │   │   └── MuscleBodyMap.jsx          # Interactive Front/Back SVG muscle recovery heatmap
+        │   └── workout/
+        │       ├── SetRow.jsx                 # Individual set row (W/number, previous, kg, reps, lockable checkbox)
+        │       ├── RestTimer.jsx              # Auto-triggered countdown bar beneath completed set
+        │       ├── ExerciseNotes.jsx          # Collapsible debounced auto-save notes textarea
+        │       ├── SwapModal.jsx              # Radix Tabs modal: AI Smart Swap + Manual Catalog Swap
+        │       └── ExercisePicker.jsx         # Searchable, muscle-filtered exercise selector
+        └── pages/
+            ├── LoginPage.jsx                  # Sign-in page
+            ├── RegisterPage.jsx               # Registration page with live password checklist
+            ├── OnboardingPage.jsx             # 4-step wizard + completion screen
+            ├── DashboardPage.jsx              # Command Center (Next Session / In-Progress HUD, stats, charts, body map)
+            ├── WorkoutsPage.jsx               # Upcoming & active workouts grouped by week
+            ├── WorkoutPage.jsx                # Live Training HUD & session lifecycle controller
+            ├── TemplatesPage.jsx              # Custom split builder (FLIP reorder) + AI routine generator
+            └── ProfilePage.jsx                # User details, Edit Profile modal, lifetime stats & collapsible history
+```
 
 ---
 

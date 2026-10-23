@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkoutProvider } from './context/WorkoutContext';
+import { TooltipProvider } from './components/ui/Tooltip';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
 import AppLayout from './components/layout/AppLayout';
 
@@ -57,7 +58,9 @@ function App() {
   return (
     <AuthProvider>
       <WorkoutProvider>
-        <AppRoutes />
+        <TooltipProvider delayDuration={150}>
+          <AppRoutes />
+        </TooltipProvider>
       </WorkoutProvider>
     </AuthProvider>
   );

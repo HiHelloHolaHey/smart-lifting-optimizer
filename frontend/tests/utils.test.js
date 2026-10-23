@@ -1,7 +1,14 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { cn } from '../src/utils/cn.js';
 import { workoutName, formatDuration, formatClock, GOAL_LABELS, LEVEL_LABELS } from '../src/utils/labels.js';
 import { groupExercises, findNextSet, hasValue } from '../src/utils/workoutSets.js';
+
+describe('frontend/src/utils/cn (shadcn class merger)', () => {
+  it('merges conditional classes and resolves Tailwind conflicts', () => {
+    assert.equal(cn('px-4 py-2', false && 'hidden', 'px-6'), 'py-2 px-6');
+  });
+});
 
 describe('frontend/src/utils/labels', () => {
   it('workoutName prefers custom template name over split_type', () => {

@@ -8,6 +8,8 @@ import { analytics, workouts as workoutsApi } from '../api/endpoints';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { Progress } from '../components/ui/Progress';
+import { Tooltip as UiTooltip, TooltipTrigger, TooltipContent } from '../components/ui/Tooltip';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import MuscleBodyMap from '../components/dashboard/MuscleBodyMap';
 import MonthlyVolumeChart from '../components/dashboard/MonthlyVolumeChart';
@@ -95,9 +97,7 @@ const InProgressCard = ({ workout, onFinished }) => {
         </div>
 
         {/* Thin progress line per theme guide */}
-        <div className="h-1 w-full overflow-hidden rounded-full bg-raised">
-          <div className="h-full bg-accent transition-all duration-300" style={{ width: `${pct}%` }} />
-        </div>
+        <Progress value={pct} />
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-border bg-raised p-3">
@@ -255,13 +255,18 @@ const DashboardPage = () => {
           <h3 className="mb-6 text-lg font-medium text-text">Weekly Heatmap</h3>
           <div className="mb-6 grid grid-cols-7 gap-2">
             {heatmap.map((d) => (
-              <div key={d.day} className="flex flex-col items-center gap-2">
-                <div
-                  className={`h-8 w-8 rounded-md border border-border ${HEAT[d.level] || HEAT[0]} cursor-default transition-colors duration-200 hover:border-accent`}
-                  title={`${d.day}: ${d.volume.toLocaleString()} kg`}
-                />
-                <span className="text-xs text-text-muted">{d.day}</span>
-              </div>
+              <UiTooltip key={d.day}>
+                <TooltipTrigger asChild>
+                  <div className="flex flex-col items-center gap-2">
+                    <div
+                      tabIndex={0}
+                      className={`h-8 w-8 rounded-md border border-border ${HEAT[d.level] || HEAT[0]} cursor-default transition-colors duration-200 hover:border-accent focus:outline-none focus:ring-1 focus:ring-accent`}
+                    />
+                    <span className="text-xs text-text-muted">{d.day}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>{`${d.day}: ${d.volume.toLocaleString()} kg`}</TooltipContent>
+              </UiTooltip>
             ))}
           </div>
           <div className="flex items-center justify-between border-t border-border pt-6 text-xs text-text-muted">

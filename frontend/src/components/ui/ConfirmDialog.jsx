@@ -1,71 +1,51 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
+import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 import { AlertTriangle } from 'lucide-react';
+import { buttonVariants } from './Button';
+import { cn } from '../../utils/cn';
 
 /**
- * In-app confirmation popup (replaces window.confirm).
- * `actions`: [{ label, onClick, variant: 'primary'|'danger'|'ghost' }] — rendered in order.
+ * shadcn/ui AlertDialog (ConfirmDialog) built on @radix-ui/react-alert-dialog.
+ * Replaces window.confirm with accessible focus management and keyboard support.
  */
-const ConfirmDialog = ({ isOpen, title, message, actions = [], onClose, tone = 'default' }) => {
-  const firstRef = useRef(null);
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const onKey = (e) => e.key === 'Escape' && onClose?.();
-    document.addEventListener('keydown', onKey);
-    firstRef.current?.focus();
-    return () => document.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const styles = {
-    primary: 'bg-accent hover:opacity-90 text-on-accent',
-    danger: 'bg-danger/15 hover:bg-danger/25 border border-danger/40 text-danger',
-    ghost: 'bg-raised hover:border-accent/50 border border-border text-text',
-  };
-
-  return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-bg/85 p-4 backdrop-blur-sm" role="presentation">
-      <div className="absolute inset-0" onClick={onClose} aria-hidden />
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="confirm-title"
-        aria-describedby="confirm-message"
-        className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-6 animate-[fadeIn_.15s_ease-out]"
-      >
+const ConfirmDialog = ({ isOpen, title, message, actions = [], onClose, tone = 'default' }) => (
+  <AlertDialogPrimitive.Root open={Boolean(isOpen)} onOpenChange={(open) => !open && onClose?.()}>
+    <AlertDialogPrimitive.Portal>
+      <AlertDialogPrimitive.Overlay
+        onClick={onClose}
+        className="fixed inset-0 z-[60] bg-bg/85 backdrop-blur-sm animate-[fadeIn_.15s_ease-out]"
+      />
+      <AlertDialogPrimitive.Content className="fixed left-1/2 top-1/2 z-[60] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface p-6 text-text focus:outline-none animate-[fadeIn_.15s_ease-out]">
         <div className="mb-3 flex items-center gap-3">
           {tone === 'danger' && (
-            <span className="rounded-full bg-danger/15 p-2 text-danger">
+            <span className="rounded-full bg-danger/15 p-2 text-danger" aria-hidden="true">
               <AlertTriangle className="h-5 w-5" />
             </span>
           )}
-          <h2 id="confirm-title" className="text-lg font-medium text-text">
+          <AlertDialogPrimitive.Title className="font-display text-lg font-medium text-text">
             {title}
-          </h2>
+          </AlertDialogPrimitive.Title>
         </div>
-        {message && (
-          <p id="confirm-message" className="mb-6 text-sm leading-relaxed text-text-muted">
-            {message}
-          </p>
-        )}
+        <AlertDialogPrimitive.Description className="mb-6 text-sm leading-relaxed text-text-muted">
+          {message || title}
+        </AlertDialogPrimitive.Description>
         <div className="flex flex-col gap-2">
           {actions.map((a, i) => (
             <button
               key={a.label}
               type="button"
-              ref={i === 0 ? firstRef : undefined}
+              autoFocus={i === 0}
               onClick={a.onClick}
               disabled={a.disabled}
-              className={`w-full rounded-xl px-4 py-2.5 text-sm font-medium transition-all active:scale-[0.99] disabled:opacity-50 ${styles[a.variant || 'ghost']}`}
+              className={cn(buttonVariants({ variant: a.variant || 'ghost', size: 'md' }), 'w-full')}
             >
               {a.label}
             </button>
           ))}
         </div>
-      </div>
-    </div>
-  );
-};
+      </AlertDialogPrimitive.Content>
+    </AlertDialogPrimitive.Portal>
+  </AlertDialogPrimitive.Root>
+);
 
 export default ConfirmDialog;

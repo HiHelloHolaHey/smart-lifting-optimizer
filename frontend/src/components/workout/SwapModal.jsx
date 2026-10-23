@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Sparkles, Loader2, Wand2, Hand } from 'lucide-react';
+import { Sparkles, Wand2, Hand } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Badge } from '../ui/Badge';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/Tabs';
 import ExercisePicker from './ExercisePicker';
 import { ai } from '../../api/endpoints';
 
@@ -14,12 +17,18 @@ const SwapModal = ({ isOpen, onClose, exercise, catalog, workoutExerciseIds, onS
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isOpen) { setTab('smart'); setReason(''); setResult(null); setError(''); }
+    if (isOpen) {
+      setTab('smart');
+      setReason('');
+      setResult(null);
+      setError('');
+    }
   }, [isOpen, exercise?.exercise_id]);
 
   const search = async (e) => {
     e?.preventDefault();
-    setLoading(true); setError('');
+    setLoading(true);
+    setError('');
     try {
       const { data } = await ai.smartSwap(exercise.exercise_id, reason.trim());
       setResult({ ...data, alternatives: data.alternatives.filter((a) => !workoutExerciseIds.includes(a.id)) });
@@ -30,45 +39,45 @@ const SwapModal = ({ isOpen, onClose, exercise, catalog, workoutExerciseIds, onS
     }
   };
 
-  const tabCls = (t) =>
-    `flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-      tab === t ? 'bg-accent text-on-accent' : 'text-text-muted hover:text-text'
-    }`;
   const muscle = catalog.find((c) => c.id === exercise?.exercise_id)?.muscle_group || exercise?.muscle_group || 'all';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Swap ${exercise?.exercise_name || 'exercise'}`}>
-      <div className="mb-4 flex gap-1 rounded-xl border border-border bg-raised p-1" role="tablist">
-        <button type="button" role="tab" aria-selected={tab === 'smart'} className={tabCls('smart')} onClick={() => setTab('smart')}>
-          <Sparkles className="h-4 w-4" />Smart swap
-        </button>
-        <button type="button" role="tab" aria-selected={tab === 'manual'} className={tabCls('manual')} onClick={() => setTab('manual')}>
-          <Hand className="h-4 w-4" />Choose manually
-        </button>
-      </div>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="smart">
+            <Sparkles className="h-4 w-4" />
+            Smart swap
+          </TabsTrigger>
+          <TabsTrigger value="manual">
+            <Hand className="h-4 w-4" />
+            Choose manually
+          </TabsTrigger>
+        </TabsList>
 
-      {tab === 'smart' ? (
-        <>
+        <TabsContent value="smart">
           <form onSubmit={search} className="mb-4 flex gap-2">
-            <input
-              className="input-field flex-1"
+            <Input
+              className="flex-1"
               maxLength={300}
               aria-label="Reason for swapping"
               placeholder="Why? e.g. lower back pain, rack is taken (optional)"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
             />
-            <button type="submit" disabled={loading} className="btn-primary flex items-center gap-2 !px-4">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}Find
-            </button>
+            <Button type="submit" loading={loading} icon={!loading ? Wand2 : undefined} className="!px-4">
+              Find
+            </Button>
           </form>
+
           {error && <p className="mb-3 text-sm text-danger">{error}</p>}
+
           {result && (
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-ai/50 bg-ai-tint px-2.5 py-1 text-xs font-semibold text-ai">
+              <Badge variant="ai">
                 <Sparkles className="h-3.5 w-3.5" />
                 {result.source === 'ai' ? 'Picked by AI coach' : 'Rule-based picks (AI unavailable)'}
-              </div>
+              </Badge>
               {result.alternatives.length === 0 && (
                 <p className="text-sm text-text-muted">All suggestions are already in this workout. Try choosing manually.</p>
               )}
@@ -92,11 +101,14 @@ const SwapModal = ({ isOpen, onClose, exercise, catalog, workoutExerciseIds, onS
               ))}
             </div>
           )}
+
           {!result && !loading && <p className="text-sm text-text-muted">Add a reason for smarter suggestions, or just press Find.</p>}
-        </>
-      ) : (
-        <ExercisePicker catalog={catalog} excludeIds={[...workoutExerciseIds]} initialGroup={muscle} actionLabel="Swap" onPick={onSelect} />
-      )}
+        </TabsContent>
+
+        <TabsContent value="manual">
+          <ExercisePicker catalog={catalog} excludeIds={[...workoutExerciseIds]} initialGroup={muscle} actionLabel="Swap" onPick={onSelect} />
+        </TabsContent>
+      </Tabs>
     </Modal>
   );
 };

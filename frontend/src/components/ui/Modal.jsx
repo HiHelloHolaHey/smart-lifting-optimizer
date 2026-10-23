@@ -1,38 +1,41 @@
-import React, { useEffect } from 'react';
+import React from 'react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
+import { cn } from '../../utils/cn';
 
-export const Modal = ({ isOpen, onClose, title, children }) => {
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-bg/85 backdrop-blur-sm transition-opacity">
-      <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-surface border border-border rounded-2xl scale-100 transition-transform">
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-medium text-text">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-text-muted hover:text-text hover:bg-raised rounded-lg transition-colors"
+/**
+ * shadcn/ui Dialog (Modal) built on @radix-ui/react-dialog.
+ * Provides full focus trapping, Escape handling, backdrop click, and WAI-ARIA dialog semantics.
+ */
+export const Modal = ({ isOpen, onClose, title, description, className, children }) => (
+  <DialogPrimitive.Root open={Boolean(isOpen)} onOpenChange={(open) => !open && onClose?.()}>
+    <DialogPrimitive.Portal>
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-bg/85 backdrop-blur-sm animate-[fadeIn_.15s_ease-out]" />
+      <DialogPrimitive.Content
+        aria-describedby={description ? undefined : undefined}
+        className={cn(
+          'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface text-text shadow-none focus:outline-none animate-[fadeIn_.15s_ease-out]',
+          className
+        )}
+      >
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <div>
+            <DialogPrimitive.Title className="font-display text-xl font-medium text-text">{title}</DialogPrimitive.Title>
+            {description ? (
+              <DialogPrimitive.Description className="mt-1 text-xs text-text-muted">{description}</DialogPrimitive.Description>
+            ) : (
+              <DialogPrimitive.Description className="sr-only">{title}</DialogPrimitive.Description>
+            )}
+          </div>
+          <DialogPrimitive.Close
+            aria-label="Close"
+            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-raised hover:text-text focus:outline-none focus:ring-2 focus:ring-accent/50"
           >
-            <X className="w-5 h-5" />
-          </button>
+            <X className="h-5 w-5" />
+          </DialogPrimitive.Close>
         </div>
         <div className="p-6">{children}</div>
-      </div>
-    </div>
-  );
-};
+      </DialogPrimitive.Content>
+    </DialogPrimitive.Portal>
+  </DialogPrimitive.Root>
+);

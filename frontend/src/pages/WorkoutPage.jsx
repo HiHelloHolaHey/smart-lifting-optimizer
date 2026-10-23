@@ -8,6 +8,8 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
+import { Progress } from '../components/ui/Progress';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../components/ui/Tooltip';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import SetRow from '../components/workout/SetRow';
@@ -26,14 +28,19 @@ const OverloadChip = ({ exerciseId }) => {
   const { suggestion, loading } = useProgressOverload(exerciseId);
   if (loading || !suggestion || suggestion.suggested_weight_kg === undefined) return null;
   return (
-    <div
-      className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-ai/50 bg-ai-tint px-2.5 py-1 text-xs font-semibold text-ai"
-      title={suggestion.increment_reason}
-    >
-      <TrendingUp className="h-3.5 w-3.5 shrink-0" />
-      <span>Suggested: {suggestion.suggested_weight_kg}kg × {suggestion.suggested_reps}</span>
-      {suggestion.source === 'ai' && <Sparkles className="h-3.5 w-3.5 shrink-0 text-ai" aria-label="AI-adjusted" />}
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-ai/50 bg-ai-tint px-2.5 py-1 text-xs font-semibold text-ai focus:outline-none focus:ring-2 focus:ring-ai/40"
+        >
+          <TrendingUp className="h-3.5 w-3.5 shrink-0" />
+          <span>Suggested: {suggestion.suggested_weight_kg}kg × {suggestion.suggested_reps}</span>
+          {suggestion.source === 'ai' && <Sparkles className="h-3.5 w-3.5 shrink-0 text-ai" aria-label="AI-adjusted" />}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{suggestion.increment_reason}</TooltipContent>
+    </Tooltip>
   );
 };
 
@@ -337,9 +344,7 @@ const WorkoutPage = () => {
           </div>
         </div>
         {/* Thin progress line per theme guide */}
-        <div className="h-0.5 w-full bg-raised">
-          <div className="h-full bg-accent transition-all duration-300" style={{ width: `${progressPct}%` }} />
-        </div>
+        <Progress value={progressPct} className="h-0.5 rounded-none" />
       </header>
 
       <main className="mx-auto max-w-3xl space-y-5 p-4 lg:p-8">

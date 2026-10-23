@@ -4,6 +4,7 @@ import { onboarding, schedule } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Progress } from '../components/ui/Progress';
 import TimeInput from '../components/ui/TimeInput';
 import { ChevronRight, Target, Flame, Activity, TrendingUp, CheckCircle2, Info, Check } from 'lucide-react';
 
@@ -464,16 +465,11 @@ const OnboardingPage = () => {
 
         {/* Progress bar */}
         <div className="mb-6">
-          <div className="flex justify-between text-sm font-medium text-slate-400 mb-2">
+          <div className="flex justify-between text-sm font-medium text-text-muted mb-2">
             <span>Step {step} of 4</span>
             <span>{Math.round((step / 4) * 100)}%</span>
           </div>
-          <div className="h-1 bg-raised rounded-full overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((step / 4) * 100)}>
-            <div
-              className="h-full bg-accent transition-all duration-500 ease-out"
-              style={{ width: `${(step / 4) * 100}%` }}
-            />
-          </div>
+          <Progress value={Math.round((step / 4) * 100)} />
         </div>
 
         <Card className="p-5 sm:p-8">
